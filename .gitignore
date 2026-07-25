@@ -8,6 +8,21 @@ dist/
 .env.*
 !.env.example
 
+# --- Local secrets and credentials ---
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+credentials/
+secrets/
+
+# --- Local application data and scanner output ---
+*.db
+*.sqlite
+*.sqlite3
+.gitleaks-report.json
+
 # --- Rust / Tauri (populated when the Tauri scaffold is added) ---
 target/
 

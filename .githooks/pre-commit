@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+set -eu
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "error: gitleaks is required to commit to this repository." >&2
+  echo "Install it with: brew install gitleaks" >&2
+  exit 1
+fi
+
+exec gitleaks protect --staged --redact --no-banner
