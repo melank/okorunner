@@ -1,0 +1,17 @@
+# --- macOS ---
+.DS_Store
+
+# --- Node ---
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
+# --- Rust / Tauri (populated when the Tauri scaffold is added) ---
+target/
+
+# --- TAKT ---
+# TAKT manages its own runtime ignores via .takt/.gitignore.
+# Committed: .takt/workflows/, .takt/facets/ (customizations).
+# Ignored by TAKT: task queue, events, generated exec workflows, worktrees.
