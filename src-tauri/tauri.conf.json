@@ -29,5 +29,10 @@
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"]
+  },
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:okorunner.db"]
+    }
   }
 }

@@ -26,7 +26,7 @@ test('should define the required application metadata and connect Vite to Tauri'
   assert.equal(packageManifest.scripts.tauri, 'tauri')
   assert.deepEqual(
     Object.keys(packageManifest.dependencies).filter((name) => name.startsWith('@tauri-apps/')),
-    [],
+    ['@tauri-apps/plugin-sql'],
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
@@ -47,7 +47,19 @@ test('should render the application title from the React entry point', async () 
   const source = await readProjectFile('src/main.tsx')
 
   assert.match(source, /const APPLICATION_TITLE = 'やる気起こrunner'/)
+  assert.match(source, /listActiveTasks\(\)/)
   assert.match(source, /createRoot\(rootElement\)\.render/)
+})
+
+test('should define the SQLite schema and initial task seed', async () => {
+  const [schema, seed] = await Promise.all([
+    readProjectFile('src-tauri/migrations/001_schema.sql'),
+    readProjectFile('src-tauri/migrations/002_seed_tasks.sql'),
+  ])
+
+  assert.match(schema, /CREATE TABLE tasks/)
+  assert.match(schema, /CREATE TABLE suggestions/)
+  assert.match(seed, /INSERT INTO tasks/)
 })
 
 test('should register only the required Rust Tauri plugins', async () => {
@@ -59,7 +71,8 @@ test('should register only the required Rust Tauri plugins', async () => {
   assert.match(cargoManifest, /^tauri-plugin-sql = \{ version = "2", features = \["sqlite"\] \}$/m)
   assert.match(cargoManifest, /^tauri-plugin-global-shortcut = "2"$/m)
   assert.match(cargoManifest, /^tauri-plugin-notification = "2"$/m)
-  assert.match(rustSource, /tauri_plugin_sql::Builder::default\(\)\.build\(\)/)
+  assert.match(rustSource, /tauri_plugin_sql::Builder::default\(\)/)
+  assert.match(rustSource, /\.add_migrations\(db::DATABASE_URL, db::migrations\(\)\)/)
   assert.match(rustSource, /tauri_plugin_global_shortcut::Builder::new\(\)\.build\(\)/)
   assert.match(rustSource, /tauri_plugin_notification::init\(\)/)
   assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 3)

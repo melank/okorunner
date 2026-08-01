@@ -2,5 +2,5 @@
   "identifier": "default",
   "description": "Default capability for the main application window.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "sql:default"]
 }
