@@ -23,10 +23,7 @@ secrets/
 *.sqlite3
 .gitleaks-report.json
 
-# --- Rust / Tauri (populated when the Tauri scaffold is added) ---
+# --- Rust / Tauri ---
 target/
-
-# --- TAKT ---
-# TAKT manages its own runtime ignores via .takt/.gitignore.
-# Committed: .takt/workflows/, .takt/facets/ (customizations).
-# Ignored by TAKT: task queue, events, generated exec workflows, worktrees.
+.cargo/
+.rustup/

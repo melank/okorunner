@@ -17,18 +17,16 @@
 - **SQLite**（`tauri-plugin-sql`）— 履歴の永続化
 - 提案ロジック — 時間帯 × タスクの ε-greedy
 
-## 開発ハーネス: TAKT
+## 開発
 
-本リポジトリは [TAKT](https://github.com/nrslib/takt) を開発ハーネスとして利用する。
+前提: Node.js / npm、[rustup](https://rustup.rs/) の stable toolchain（`rustc` / `cargo`）。
 
 ```bash
-takt          # AI と対話してタスクを整理・キュー登録
-takt run      # 隔離 worktree でワークフロー実行（plan → implement → review → fix）
-takt list     # タスクブランチの管理（merge / retry / delete）
+npm install
+npm run build          # フロントエンドビルド
+cargo check --manifest-path src-tauri/Cargo.toml
+npm run tauri dev      # macOS 開発ウィンドウを起動
 ```
-
-- プロバイダ設定: `~/.takt/config.yaml`（provider: codex）
-- ワークフローは builtin を使用。カスタマイズ時は `takt eject` で `.takt/` に取り込む
 
 ## ライセンス / author
 
