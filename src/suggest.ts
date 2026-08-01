@@ -99,23 +99,6 @@ export async function getCurrentSuggestion(): Promise<Suggestion | null> {
   }
 }
 
-export async function getLatestPendingSuggestion(): Promise<{
-  id: number
-  title: string
-  suggestedAt: string
-} | null> {
-  const current = await getCurrentSuggestion()
-  if (current === null) {
-    return null
-  }
-
-  return {
-    id: current.id,
-    title: current.title,
-    suggestedAt: current.suggestedAt,
-  }
-}
-
 export async function completeSuggestion(
   suggestionId: number,
   motivated: boolean,

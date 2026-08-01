@@ -12,7 +12,6 @@
     "core:tray:default",
     "core:app:allow-default-window-icon",
     "sql:default",
-    "sql:allow-execute",
-    "notification:default"
+    "sql:allow-execute"
   ]
 }

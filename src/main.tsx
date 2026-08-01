@@ -1,10 +1,8 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { startReminderScheduler } from './reminderScheduler'
 import {
   completeSuggestion,
   getCurrentSuggestion,
-  getLatestPendingSuggestion,
   suggestNextTask,
   TIME_BAND_LABELS,
 } from './suggest'
@@ -67,18 +65,6 @@ function App() {
   useEffect(() => {
     void loadSuggestion()
   }, [loadSuggestion])
-
-  useEffect(() => {
-    return startReminderScheduler({
-      getPendingSuggestion: async () => {
-        try {
-          return await getLatestPendingSuggestion()
-        } catch {
-          return null
-        }
-      },
-    })
-  }, [])
 
   return (
     <main className="app">

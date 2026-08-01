@@ -28,7 +28,7 @@ test('should define the required application metadata and connect Vite to Tauri'
     Object.keys(packageManifest.dependencies)
       .filter((name) => name.startsWith('@tauri-apps/'))
       .sort(),
-    ['@tauri-apps/api', '@tauri-apps/plugin-notification', '@tauri-apps/plugin-sql'].sort(),
+    ['@tauri-apps/api', '@tauri-apps/plugin-sql'].sort(),
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
@@ -76,13 +76,17 @@ test('should define the SQLite schema and initial task seed', async () => {
   assert.ok(capabilitiesConfig.permissions.includes('sql:allow-execute'))
 })
 
-test('should link proposal logic documentation from README', async () => {
-  const [readme, doc] = await Promise.all([
+test('should link documentation from README', async () => {
+  const [readme, roadmap, doc] = await Promise.all([
     readProjectFile('README.md'),
+    readProjectFile('docs/ROADMAP.md'),
     readProjectFile('docs/suggestion-logic.md'),
   ])
 
+  assert.match(readme, /docs\/ROADMAP\.md/)
   assert.match(readme, /docs\/suggestion-logic\.md/)
+  assert.match(roadmap, /Phase 1/)
+  assert.match(roadmap, /MVP/)
   assert.match(doc, /ε-greedy/)
   assert.match(doc, /EPSILON/)
 })
@@ -93,21 +97,6 @@ test('should record Done completion in suggestions', async () => {
   assert.match(source, /completeSuggestion/)
   assert.match(source, /excludeTaskIds/)
   assert.match(source, /replaceSuggestionId/)
-})
-
-test('should register reminder and notification helpers', async () => {
-  const [capabilities, reminderSource, notifySource, mainSource] = await Promise.all([
-    readProjectFile('src-tauri/capabilities/default.json'),
-    readProjectFile('src/reminder.ts'),
-    readProjectFile('src/reminderNotify.ts'),
-    readProjectFile('src/main.tsx'),
-  ])
-  const capabilitiesConfig = JSON.parse(capabilities)
-
-  assert.ok(capabilitiesConfig.permissions.includes('notification:default'))
-  assert.match(reminderSource, /REMINDER_INTERVAL_MS/)
-  assert.match(notifySource, /sendDoneReminder/)
-  assert.match(mainSource, /startReminderScheduler/)
 })
 
 test('should initialize tray and window shell outside React', async () => {
@@ -143,10 +132,8 @@ test('should register only the required Rust Tauri plugins', async () => {
 
   assert.match(cargoManifest, /^tauri = \{ version = "2", features = \["tray-icon"\] \}$/m)
   assert.match(cargoManifest, /^tauri-plugin-sql = \{ version = "2", features = \["sqlite"\] \}$/m)
-  assert.match(cargoManifest, /^tauri-plugin-notification = "2"$/m)
   assert.match(rustSource, /tauri_plugin_sql::Builder::default\(\)/)
   assert.match(rustSource, /\.add_migrations\(db::DATABASE_URL, db::migrations\(\)\)/)
-  assert.match(rustSource, /tauri_plugin_notification::init\(\)/)
   assert.match(rustSource, /ActivationPolicy::Accessory/)
-  assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 2)
+  assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 1)
 })

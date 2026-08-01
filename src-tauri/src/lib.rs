@@ -8,7 +8,6 @@ pub fn run() {
                 .add_migrations(db::DATABASE_URL, db::migrations())
                 .build(),
         )
-        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

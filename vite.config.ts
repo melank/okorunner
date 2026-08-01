@@ -8,7 +8,6 @@ const TAURI_PACKAGES = [
   '@tauri-apps/api',
   '@tauri-apps/api/core',
   '@tauri-apps/plugin-sql',
-  '@tauri-apps/plugin-notification',
 ]
 
 export default defineConfig({

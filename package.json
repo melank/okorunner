@@ -6,12 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "node --experimental-strip-types --test tests/scaffold.test.mjs tests/suggestLogic.test.mjs tests/tauriRuntime.test.mjs tests/reminder.test.mjs tests/viewState.test.mjs",
+    "test": "node --experimental-strip-types --test tests/scaffold.test.mjs tests/suggestLogic.test.mjs tests/tauriRuntime.test.mjs tests/viewState.test.mjs",
     "tauri": "tauri"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-notification": "^2.3.3",
     "@tauri-apps/plugin-sql": "^2.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "react": "^19.0.0",
