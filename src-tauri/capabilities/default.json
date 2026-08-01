@@ -1,7 +1,7 @@
 {
   "identifier": "default",
   "description": "Default capability for the main application window.",
-  "windows": ["main"],
+  "windows": ["main", "manage"],
   "permissions": [
     "core:default",
     "core:window:allow-show",
@@ -12,6 +12,10 @@
     "core:window:allow-set-position",
     "core:window:allow-outer-size",
     "core:window:allow-primary-monitor",
+    "core:window:allow-center",
+    "core:webview:allow-get-all-webviews",
+    "core:webview:allow-webview-position",
+    "core:webview:allow-webview-size",
     "core:tray:default",
     "core:app:allow-default-window-icon",
     "sql:default",

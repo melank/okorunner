@@ -1,16 +1,13 @@
 import { useState } from 'react'
-import { APP_TABS, type AppTab } from './appTabs'
+import { MANAGE_TABS, type ManageTab } from './appTabs'
 import { SettingsView } from './views/SettingsView'
 import { StatsView } from './views/StatsView'
-import { SuggestionView } from './views/SuggestionView'
 import { TasksView } from './views/TasksView'
 
-const APPLICATION_TITLE = 'やる気起こrunner'
+const MANAGE_TITLE = 'やる気起こrunner — 管理'
 
-function renderTab(tab: AppTab) {
+function renderTab(tab: ManageTab) {
   switch (tab) {
-    case 'suggestion':
-      return <SuggestionView />
     case 'tasks':
       return <TasksView />
     case 'stats':
@@ -20,21 +17,18 @@ function renderTab(tab: AppTab) {
   }
 }
 
-export function App() {
-  const [activeTab, setActiveTab] = useState<AppTab>('suggestion')
+export function ManageApp() {
+  const [activeTab, setActiveTab] = useState<ManageTab>('tasks')
 
   return (
-    <main className="app">
-      <header className="app__header">
-        <h1 className="app__title">{APPLICATION_TITLE}</h1>
+    <main className="app app--manage">
+      <header className="app__header app__header--manage">
+        <h1 className="app__title">{MANAGE_TITLE}</h1>
+        <p className="card__hint">タスクの追加・名称変更、統計の確認、提案の設定を行います。</p>
       </header>
 
-      <div className="app__content" aria-live="polite">
-        {renderTab(activeTab)}
-      </div>
-
-      <nav className="app-nav" aria-label="メイン">
-        {APP_TABS.map((tab) => (
+      <nav className="app-nav app-nav--manage" aria-label="管理メニュー">
+        {MANAGE_TABS.map((tab) => (
           <button
             key={tab.id}
             className={activeTab === tab.id ? 'app-nav__button app-nav__button--active' : 'app-nav__button'}
@@ -46,8 +40,10 @@ export function App() {
           </button>
         ))}
       </nav>
+
+      <div className="app__content app__content--manage" aria-live="polite">
+        {renderTab(activeTab)}
+      </div>
     </main>
   )
 }
-
-export { APPLICATION_TITLE }
