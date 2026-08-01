@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "node --experimental-strip-types --test tests/scaffold.test.mjs tests/suggestLogic.test.mjs tests/tauriRuntime.test.mjs tests/viewState.test.mjs tests/taskOrder.test.mjs tests/settings.test.mjs tests/stats.test.mjs",
+    "test": "node --experimental-strip-types --test tests/scaffold.test.mjs tests/suggestLogic.test.mjs tests/tauriRuntime.test.mjs tests/viewState.test.mjs tests/taskOrder.test.mjs tests/taskDeletion.test.mjs tests/settings.test.mjs tests/stats.test.mjs",
     "tauri": "tauri"
   },
   "dependencies": {

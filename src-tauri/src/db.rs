@@ -28,5 +28,11 @@ pub fn migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/004_settings.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 5,
+            description: "add_task_deleted",
+            sql: include_str!("../migrations/005_task_deleted.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

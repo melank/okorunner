@@ -1,7 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Task } from '../db'
-import { addTask, listAllTasks, moveTask, setTaskActive, updateTaskTitle } from '../tasks'
+import { deletionConfirmCopy, type TaskDeletionMode } from '../taskDeletion'
+import {
+  addTask,
+  deleteTask,
+  isTaskPaused,
+  isTaskSuggested,
+  listVisibleTasks,
+  moveTask,
+  previewTaskDeletion,
+  setTaskPaused,
+  updateTaskTitle,
+} from '../tasks'
 import { formatTauriError } from '../tauriRuntime'
+
+type ConfirmingDelete = {
+  taskId: number
+  mode: TaskDeletionMode
+}
 
 export function TasksView() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -9,12 +25,14 @@ export function TasksView() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [isBusy, setIsBusy] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState<ConfirmingDelete | null>(null)
 
   const reload = useCallback(async () => {
     setError(null)
     try {
-      setTasks(await listAllTasks())
+      setTasks(await listVisibleTasks())
     } catch (loadError: unknown) {
       setError(formatTauriError(loadError))
     }
@@ -27,6 +45,7 @@ export function TasksView() {
   const runAction = useCallback(async (action: () => Promise<void>) => {
     setIsBusy(true)
     setError(null)
+    setMessage(null)
     try {
       await action()
       await reload()
@@ -37,94 +56,199 @@ export function TasksView() {
     }
   }, [reload])
 
+  const saveTitle = useCallback(async (task: Task) => {
+    const trimmed = editingTitle.trim()
+    if (trimmed.length === 0 || trimmed === task.title) {
+      setEditingId(null)
+      setEditingTitle('')
+      return
+    }
+
+    setEditingId(null)
+    setEditingTitle('')
+    setTasks((current) =>
+      current.map((item) => (item.id === task.id ? { ...item, title: trimmed } : item)),
+    )
+
+    try {
+      setError(null)
+      await updateTaskTitle(task.id, trimmed)
+    } catch (actionError: unknown) {
+      setError(formatTauriError(actionError))
+      await reload()
+    }
+  }, [editingTitle, reload])
+
+  const cancelEditing = useCallback(() => {
+    setEditingId(null)
+    setEditingTitle('')
+  }, [])
+
   return (
     <section className="card card--scroll" aria-label="タスク管理">
       <div className="card__section">
         <h2 className="card__heading">タスク一覧</h2>
-        <p className="card__hint">並び順は提案時の優先度に影響しません。表示順のみです。</p>
+        <p className="card__hint">
+          タスク名をクリックして名称を変更できます。「しばらくは出さない」にすると提案に出なくなります（一覧には残ります）。
+        </p>
       </div>
 
       {error !== null && <p className="form-error">{error}</p>}
+      {message !== null && <p className="form-success">{message}</p>}
 
       <ul className="task-list">
         {tasks.map((task, index) => (
           <li key={task.id} className="task-item">
-            <div className="task-item__main">
-              {editingId === task.id ? (
-                <input
-                  className="field-input"
-                  value={editingTitle}
-                  disabled={isBusy}
-                  onChange={(event) => setEditingTitle(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      void runAction(async () => {
-                        await updateTaskTitle(task.id, editingTitle)
-                        setEditingId(null)
-                      })
+            <div className="task-item__header">
+              <div className="task-item__title-field">
+                {editingId === task.id ? (
+                  <input
+                    className={
+                      isTaskSuggested(task)
+                        ? 'task-item__title-input'
+                        : 'task-item__title-input task-item__title-input--inactive'
                     }
-                  }}
-                />
-              ) : (
-                <span className={task.active === 1 ? 'task-item__title' : 'task-item__title task-item__title--inactive'}>
-                  {task.title}
-                </span>
-              )}
+                    value={editingTitle}
+                    size={Math.max(editingTitle.length, 1)}
+                    disabled={isBusy}
+                    aria-label="タスク名"
+                    autoFocus
+                    onChange={(event) => setEditingTitle(event.target.value)}
+                    onFocus={(event) => event.target.select()}
+                    onBlur={() => {
+                      void saveTitle(task)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void saveTitle(task)
+                      }
+                      if (event.key === 'Escape') {
+                        event.preventDefault()
+                        cancelEditing()
+                      }
+                    }}
+                  />
+                ) : (
+                  <button
+                    className={
+                      isTaskSuggested(task)
+                        ? 'task-item__title-btn'
+                        : 'task-item__title-btn task-item__title-btn--inactive'
+                    }
+                    type="button"
+                    disabled={isBusy}
+                    title="クリックして名称を変更"
+                    aria-label={`${task.title}（クリックして名称を変更）`}
+                    onClick={() => {
+                      setEditingId(task.id)
+                      setEditingTitle(task.title)
+                    }}
+                  >
+                    {task.title}
+                  </button>
+                )}
+              </div>
               <label className="task-item__toggle">
                 <input
                   type="checkbox"
-                  checked={task.active === 1}
+                  checked={isTaskPaused(task)}
                   disabled={isBusy}
                   onChange={() => void runAction(async () => {
-                    await setTaskActive(task.id, task.active !== 1)
+                    await setTaskPaused(task.id, !isTaskPaused(task))
                   })}
                 />
-                有効
+                しばらくは出さない
               </label>
             </div>
-            <div className="task-item__actions">
-              <button
-                className="btn btn--ghost"
-                type="button"
-                disabled={isBusy || index === 0}
-                onClick={() => void runAction(async () => moveTask(task.id, 'up'))}
-              >
-                ↑
-              </button>
-              <button
-                className="btn btn--ghost"
-                type="button"
-                disabled={isBusy || index === tasks.length - 1}
-                onClick={() => void runAction(async () => moveTask(task.id, 'down'))}
-              >
-                ↓
-              </button>
-              {editingId === task.id ? (
+            <div className="task-item__footer">
+              <div className="task-item__actions">
                 <button
-                  className="btn btn--secondary"
+                  className="btn btn--ghost"
                   type="button"
-                  disabled={isBusy}
-                  onClick={() => void runAction(async () => {
-                    await updateTaskTitle(task.id, editingTitle)
-                    setEditingId(null)
-                  })}
+                  disabled={isBusy || index === 0}
+                  onClick={() => void runAction(async () => moveTask(task.id, 'up'))}
+                  aria-label="上へ移動"
                 >
-                  保存
+                  ↑
                 </button>
-              ) : (
                 <button
-                  className="btn btn--secondary"
+                  className="btn btn--ghost"
                   type="button"
-                  disabled={isBusy}
-                  onClick={() => {
-                    setEditingId(task.id)
-                    setEditingTitle(task.title)
-                  }}
+                  disabled={isBusy || index === tasks.length - 1}
+                  onClick={() => void runAction(async () => moveTask(task.id, 'down'))}
+                  aria-label="下へ移動"
                 >
-                  編集
+                  ↓
                 </button>
-              )}
+              </div>
+              <button
+                className="task-item__delete"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void previewTaskDeletion(task.id)
+                    .then((mode) => {
+                      setConfirmingDelete({ taskId: task.id, mode })
+                    })
+                    .catch((loadError: unknown) => {
+                      setError(formatTauriError(loadError))
+                    })
+                }}
+              >
+                削除
+              </button>
             </div>
+            {confirmingDelete?.taskId === task.id && (() => {
+              const copy = deletionConfirmCopy(confirmingDelete.mode, task.title)
+
+              return (
+              <div
+                className={
+                  confirmingDelete.mode === 'physical'
+                    ? 'task-item__confirm task-item__confirm--physical'
+                    : 'task-item__confirm task-item__confirm--logical'
+                }
+                role="alertdialog"
+                aria-labelledby={`delete-${task.id}`}
+              >
+                <p className="task-item__confirm-text" id={`delete-${task.id}`}>
+                  {copy.message}
+                </p>
+                <div className="task-item__confirm-actions">
+                  <button
+                    className="btn btn--secondary"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => setConfirmingDelete(null)}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    className={
+                      confirmingDelete.mode === 'physical'
+                        ? 'btn btn--danger'
+                        : 'btn btn--primary'
+                    }
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void runAction(async () => {
+                        const mode = await deleteTask(task.id)
+                        setConfirmingDelete(null)
+                        if (editingId === task.id) {
+                          setEditingId(null)
+                        }
+                        setMessage(deletionConfirmCopy(mode, task.title).successMessage)
+                      })
+                    }}
+                  >
+                    {copy.confirmLabel}
+                  </button>
+                </div>
+              </div>
+              )
+            })()}
           </li>
         ))}
       </ul>

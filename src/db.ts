@@ -5,4 +5,5 @@ export type Task = {
   title: string
   active: number
   sort_order: number
+  deleted: number
 }
