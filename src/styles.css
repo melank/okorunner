@@ -1,0 +1,16 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  font-size: 1.5rem;
+}

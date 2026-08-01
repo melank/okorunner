@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "やる気起こrunner",
+  "version": "0.1.0",
+  "identifier": "com.melank.okorunner",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "やる気起こrunner",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self' asset:",
+        "connect-src": "ipc: http://ipc.localhost",
+        "img-src": "'self' asset: http://asset.localhost blob: data:"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  }
+}
