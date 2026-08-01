@@ -1,11 +1,18 @@
 import { defaultWindowIcon } from '@tauri-apps/api/app'
-import { TrayIcon } from '@tauri-apps/api/tray'
-import { toggleAppWindow } from './windowBehavior'
+import { TrayIcon, type TrayIconEvent } from '@tauri-apps/api/tray'
+import { toggleAppWindow, type TrayRect } from './windowBehavior'
 import { assertTauriRuntime } from './tauriRuntime'
 
 export const TRAY_ID = 'okorunner-main-tray'
 
 let trayInstance: TrayIcon | null = null
+let cachedTrayRect: TrayRect | undefined
+
+function rememberTrayRect(event: TrayIconEvent): void {
+  if ('rect' in event) {
+    cachedTrayRect = event.rect
+  }
+}
 
 async function removeExistingTray(): Promise<void> {
   try {
@@ -36,12 +43,14 @@ export async function registerTrayIcon(): Promise<() => Promise<void>> {
     tooltip: 'やる気起こrunner',
     showMenuOnLeftClick: false,
     action: (event) => {
+      rememberTrayRect(event)
+
       if (
         event.type === 'Click' &&
         event.button === 'Left' &&
         event.buttonState === 'Up'
       ) {
-        void toggleAppWindow()
+        void toggleAppWindow(cachedTrayRect)
       }
     },
   })
@@ -49,6 +58,7 @@ export async function registerTrayIcon(): Promise<() => Promise<void>> {
   return async () => {
     await trayInstance?.close()
     trayInstance = null
+    cachedTrayRect = undefined
 
     try {
       await TrayIcon.removeById(TRAY_ID)
