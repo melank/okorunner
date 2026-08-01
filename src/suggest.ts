@@ -133,6 +133,10 @@ export async function completeSuggestion(
 export async function suggestNextTask(
   now: Date = new Date(),
   random: () => number = Math.random,
+  options?: {
+    excludeTaskIds?: number[]
+    replaceSuggestionId?: number
+  },
 ): Promise<Suggestion> {
   const database = await getDatabase()
   const tasks = await database.select<Task[]>(
@@ -140,8 +144,25 @@ export async function suggestNextTask(
   )
   const timeBand = getTimeBand(now)
   const scores = await loadTaskScores(timeBand, database)
-  const task = pickTask(tasks, scores, random)
+  const task = pickTask(tasks, scores, random, options?.excludeTaskIds ?? [])
   const suggestedAt = formatLocalDateTime(now)
+
+  if (options?.replaceSuggestionId !== undefined) {
+    await database.execute(
+      `UPDATE suggestions
+       SET task_id = $1, suggested_at = $2
+       WHERE id = $3 AND done_at IS NULL`,
+      [task.id, suggestedAt, options.replaceSuggestionId],
+    )
+
+    return {
+      id: options.replaceSuggestionId,
+      taskId: task.id,
+      title: task.title,
+      timeBand,
+      suggestedAt,
+    }
+  }
 
   const result = await database.execute(
     'INSERT INTO suggestions (task_id, suggested_at) VALUES ($1, $2)',

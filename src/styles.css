@@ -47,6 +47,11 @@ h1 {
   line-height: 1.35;
 }
 
+.panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .actions {
   display: grid;
   gap: 0.625rem;

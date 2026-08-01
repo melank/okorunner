@@ -57,6 +57,7 @@ test('should render the application title from the React entry point', async () 
   assert.match(source, /const APPLICATION_TITLE = 'やる気起こrunner'/)
   assert.match(source, /suggestNextTask\(/)
   assert.match(source, /completeSuggestion\(/)
+  assert.match(source, /viewState/)
   assert.match(source, /initializeAppShell\(\)/)
   assert.match(source, /createRoot\(rootElement\)\.render/)
 })
@@ -90,8 +91,8 @@ test('should record Done completion in suggestions', async () => {
   const source = await readProjectFile('src/suggest.ts')
 
   assert.match(source, /completeSuggestion/)
-  assert.match(source, /SET done_at = \$1, motivated = \$2/)
-  assert.match(source, /getCurrentSuggestion/)
+  assert.match(source, /excludeTaskIds/)
+  assert.match(source, /replaceSuggestionId/)
 })
 
 test('should register reminder and notification helpers', async () => {

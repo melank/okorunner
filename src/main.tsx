@@ -13,65 +13,62 @@ import {
   getLatestPendingSuggestion,
   suggestNextTask,
   TIME_BAND_LABELS,
-  type Suggestion,
 } from './suggest'
 import { initializeAppShell } from './appShell'
 import { formatTauriError } from './tauriRuntime'
+import { completionMessage, type ViewState } from './viewState'
 import './styles.css'
 
 const APPLICATION_TITLE = 'やる気起こrunner'
 
 function App() {
-  const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [completionMessage, setCompletionMessage] = useState<string | null>(null)
+  const [view, setView] = useState<ViewState>({ kind: 'loading' })
   const [isCompleting, setIsCompleting] = useState(false)
 
-  const loadSuggestion = useCallback(async (options?: { forceNew?: boolean }) => {
-    setIsLoading(true)
-    setError(null)
-    setCompletionMessage(null)
+  const loadSuggestion = useCallback(async (options?: {
+    forceNew?: boolean
+    excludeTaskId?: number
+    replaceSuggestionId?: number
+  }) => {
+    setView({ kind: 'loading' })
 
     try {
       if (!options?.forceNew) {
         const current = await getCurrentSuggestion()
         if (current !== null) {
-          setSuggestion(current)
+          setView({ kind: 'suggestion', suggestion: current })
           return
         }
       }
 
-      const nextSuggestion = await suggestNextTask()
-      setSuggestion(nextSuggestion)
+      const nextSuggestion = await suggestNextTask(new Date(), Math.random, {
+        excludeTaskIds: options?.excludeTaskId !== undefined ? [options.excludeTaskId] : undefined,
+        replaceSuggestionId: options?.replaceSuggestionId,
+      })
+      setView({ kind: 'suggestion', suggestion: nextSuggestion })
     } catch (loadError: unknown) {
       console.error('提案の取得に失敗しました', loadError)
-      setError(formatTauriError(loadError))
-      setSuggestion(null)
-    } finally {
-      setIsLoading(false)
+      setView({ kind: 'error', message: formatTauriError(loadError) })
     }
   }, [])
 
   const completeCurrentSuggestion = useCallback(async (motivated: boolean) => {
-    if (suggestion === null || isCompleting) {
+    if (view.kind !== 'suggestion' || isCompleting) {
       return
     }
 
     setIsCompleting(true)
-    setError(null)
 
     try {
-      await completeSuggestion(suggestion.id, motivated)
-      setSuggestion(null)
-      setCompletionMessage(motivated ? 'やる気が出た Doneを記録しました' : 'Doneを記録しました')
+      await completeSuggestion(view.suggestion.id, motivated)
+      setView({ kind: 'completed', message: completionMessage(motivated) })
     } catch (completeError: unknown) {
       console.error('Doneの記録に失敗しました', completeError)
-      setError(formatTauriError(completeError))
+      setView({ kind: 'error', message: formatTauriError(completeError) })
     } finally {
       setIsCompleting(false)
     }
-  }, [isCompleting, suggestion])
+  }, [isCompleting, view])
 
   useEffect(() => {
     void loadSuggestion()
@@ -94,7 +91,7 @@ function App() {
           await unregisterGlobalShortcut()
         }
       } catch {
-        // ブラウザ単体起動時など Tauri 外ではショートカット登録をスキップする
+        // ブラウザ単体起動時など Tauri 外ではスキップする
       }
     })()
 
@@ -120,15 +117,31 @@ function App() {
     <main className="app">
       <h1>{APPLICATION_TITLE}</h1>
       <p className="shortcut-hint">ショートカット: {GLOBAL_SHORTCUT.replace('CommandOrControl', '⌘')}</p>
-      {error !== null && <p className="status status-error">{error}</p>}
-      {error === null && completionMessage !== null && (
-        <p className="status status-success">{completionMessage}</p>
+
+      {view.kind === 'loading' && <p className="status">提案を選んでいます…</p>}
+
+      {view.kind === 'error' && (
+        <section className="panel">
+          <p className="status status-error">{view.message}</p>
+          <button className="button" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
+            もう一度試す
+          </button>
+        </section>
       )}
-      {error === null && isLoading && <p className="status">提案を選んでいます…</p>}
-      {error === null && !isLoading && suggestion !== null && (
+
+      {view.kind === 'completed' && (
+        <section className="panel">
+          <p className="status status-success">{view.message}</p>
+          <button className="button" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
+            次の提案をもらう
+          </button>
+        </section>
+      )}
+
+      {view.kind === 'suggestion' && (
         <section className="suggestion">
-          <p className="status">時間帯: {TIME_BAND_LABELS[suggestion.timeBand]}</p>
-          <p className="suggestion-title">{suggestion.title}</p>
+          <p className="status">時間帯: {TIME_BAND_LABELS[view.suggestion.timeBand]}</p>
+          <p className="suggestion-title">{view.suggestion.title}</p>
           <div className="actions">
             <button
               className="button"
@@ -150,19 +163,21 @@ function App() {
               className="button button-secondary"
               type="button"
               disabled={isCompleting}
-              onClick={() => void loadSuggestion({ forceNew: true })}
+              onClick={() => {
+                if (view.kind !== 'suggestion') {
+                  return
+                }
+
+                void loadSuggestion({
+                  forceNew: true,
+                  excludeTaskId: view.suggestion.taskId,
+                  replaceSuggestionId: view.suggestion.id,
+                })
+              }}
             >
               別の提案
             </button>
           </div>
-        </section>
-      )}
-      {error === null && !isLoading && suggestion === null && completionMessage === null && (
-        <section className="suggestion">
-          <p className="status">提案がありません</p>
-          <button className="button" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
-            提案をもらう
-          </button>
         </section>
       )}
     </main>

@@ -16,37 +16,50 @@ export function motivatedRate(score: TaskScore | undefined): number {
   return score.motivated / score.done
 }
 
+export function filterTasks(tasks: Task[], excludeTaskIds: Iterable<number>): Task[] {
+  const excluded = new Set(excludeTaskIds)
+  if (excluded.size === 0) {
+    return tasks
+  }
+
+  const filtered = tasks.filter((task) => !excluded.has(task.id))
+  return filtered.length > 0 ? filtered : tasks
+}
+
 export function pickTask(
   tasks: Task[],
   scores: Map<number, TaskScore>,
   random: () => number,
+  excludeTaskIds: number[] = [],
 ): Task {
-  if (tasks.length === 0) {
+  const candidates = filterTasks(tasks, excludeTaskIds)
+
+  if (candidates.length === 0) {
     throw new Error('提案できるタスクがありません')
   }
 
   if (random() < EPSILON) {
-    const index = Math.floor(random() * tasks.length)
-    return tasks[index]
+    const index = Math.floor(random() * candidates.length)
+    return candidates[index]
   }
 
   let bestRate = -1
-  let candidates: Task[] = []
+  let bestCandidates: Task[] = []
 
-  for (const task of tasks) {
+  for (const task of candidates) {
     const rate = motivatedRate(scores.get(task.id))
 
     if (rate > bestRate) {
       bestRate = rate
-      candidates = [task]
+      bestCandidates = [task]
       continue
     }
 
     if (rate === bestRate) {
-      candidates.push(task)
+      bestCandidates.push(task)
     }
   }
 
-  const index = Math.floor(random() * candidates.length)
-  return candidates[index]
+  const index = Math.floor(random() * bestCandidates.length)
+  return bestCandidates[index]
 }
