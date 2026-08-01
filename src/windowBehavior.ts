@@ -1,6 +1,13 @@
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { activateAppWindow } from './globalShortcut'
 import { assertTauriRuntime } from './tauriRuntime'
+
+export async function activateAppWindow(): Promise<void> {
+  const window = getCurrentWindow()
+
+  await window.show()
+  await window.unminimize()
+  await window.setFocus()
+}
 
 export async function hideMainWindowOnClose(): Promise<() => void> {
   assertTauriRuntime()

@@ -1,11 +1,5 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import {
-  activateAppWindow,
-  GLOBAL_SHORTCUT,
-  registerGlobalShortcut,
-  unregisterGlobalShortcut,
-} from './globalShortcut'
 import { startReminderScheduler } from './reminderScheduler'
 import {
   completeSuggestion,
@@ -75,33 +69,6 @@ function App() {
   }, [loadSuggestion])
 
   useEffect(() => {
-    let cancelled = false
-
-    const onShortcutPressed = () => {
-      void (async () => {
-        await activateAppWindow()
-        await loadSuggestion()
-      })()
-    }
-
-    void (async () => {
-      try {
-        await registerGlobalShortcut(onShortcutPressed)
-        if (cancelled) {
-          await unregisterGlobalShortcut()
-        }
-      } catch {
-        // ブラウザ単体起動時など Tauri 外ではスキップする
-      }
-    })()
-
-    return () => {
-      cancelled = true
-      void unregisterGlobalShortcut()
-    }
-  }, [loadSuggestion])
-
-  useEffect(() => {
     return startReminderScheduler({
       getPendingSuggestion: async () => {
         try {
@@ -115,71 +82,83 @@ function App() {
 
   return (
     <main className="app">
-      <h1>{APPLICATION_TITLE}</h1>
-      <p className="shortcut-hint">ショートカット: {GLOBAL_SHORTCUT.replace('CommandOrControl', '⌘')}</p>
+      <header className="app__header">
+        <h1 className="app__title">{APPLICATION_TITLE}</h1>
+      </header>
 
-      {view.kind === 'loading' && <p className="status">提案を選んでいます…</p>}
+      <div className="app__content" aria-live="polite">
+        {view.kind === 'loading' && (
+          <section className="card card--loading" aria-busy="true" aria-label="提案を読み込み中">
+            <span className="spinner" aria-hidden="true" />
+            <p className="card__message">提案を選んでいます…</p>
+          </section>
+        )}
 
-      {view.kind === 'error' && (
-        <section className="panel">
-          <p className="status status-error">{view.message}</p>
-          <button className="button" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
-            もう一度試す
-          </button>
-        </section>
-      )}
+        {view.kind === 'error' && (
+          <section className="card card--error" aria-label="エラー">
+            <p className="card__message card__message--error">{view.message}</p>
+            <div className="card__actions">
+              <button className="btn btn--primary" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
+                もう一度試す
+              </button>
+            </div>
+          </section>
+        )}
 
-      {view.kind === 'completed' && (
-        <section className="panel">
-          <p className="status status-success">{view.message}</p>
-          <button className="button" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
-            次の提案をもらう
-          </button>
-        </section>
-      )}
+        {view.kind === 'completed' && (
+          <section className="card card--success" aria-label="記録完了">
+            <p className="card__message card__message--success">{view.message}</p>
+            <div className="card__actions">
+              <button className="btn btn--primary" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
+                次の提案をもらう
+              </button>
+            </div>
+          </section>
+        )}
 
-      {view.kind === 'suggestion' && (
-        <section className="suggestion">
-          <p className="status">時間帯: {TIME_BAND_LABELS[view.suggestion.timeBand]}</p>
-          <p className="suggestion-title">{view.suggestion.title}</p>
-          <div className="actions">
-            <button
-              className="button"
-              type="button"
-              disabled={isCompleting}
-              onClick={() => void completeCurrentSuggestion(false)}
-            >
-              Done
-            </button>
-            <button
-              className="button button-motivated"
-              type="button"
-              disabled={isCompleting}
-              onClick={() => void completeCurrentSuggestion(true)}
-            >
-              やる気が出た Done
-            </button>
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={isCompleting}
-              onClick={() => {
-                if (view.kind !== 'suggestion') {
-                  return
-                }
+        {view.kind === 'suggestion' && (
+          <section className="card" aria-label="提案">
+            <p className="card__label">{TIME_BAND_LABELS[view.suggestion.timeBand]}</p>
+            <h2 className="card__title">{view.suggestion.title}</h2>
+            <div className="card__actions">
+              <button
+                className="btn btn--primary"
+                type="button"
+                disabled={isCompleting}
+                onClick={() => void completeCurrentSuggestion(false)}
+              >
+                Done
+              </button>
+              <button
+                className="btn btn--success"
+                type="button"
+                disabled={isCompleting}
+                onClick={() => void completeCurrentSuggestion(true)}
+              >
+                やる気が出た Done
+              </button>
+              <button
+                className="btn btn--secondary"
+                type="button"
+                disabled={isCompleting}
+                onClick={() => {
+                  if (view.kind !== 'suggestion') {
+                    return
+                  }
 
-                void loadSuggestion({
-                  forceNew: true,
-                  excludeTaskId: view.suggestion.taskId,
-                  replaceSuggestionId: view.suggestion.id,
-                })
-              }}
-            >
-              別の提案
-            </button>
-          </div>
-        </section>
-      )}
+                  void loadSuggestion({
+                    forceNew: true,
+                    excludeTaskId: view.suggestion.taskId,
+                    replaceSuggestionId: view.suggestion.id,
+                  })
+                }}
+              >
+                別の提案
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
     </main>
   )
 }

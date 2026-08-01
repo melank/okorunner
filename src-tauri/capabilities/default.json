@@ -13,9 +13,6 @@
     "core:app:allow-default-window-icon",
     "sql:default",
     "sql:allow-execute",
-    "global-shortcut:allow-is-registered",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
     "notification:default"
   ]
 }

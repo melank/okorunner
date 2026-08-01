@@ -28,7 +28,7 @@ test('should define the required application metadata and connect Vite to Tauri'
     Object.keys(packageManifest.dependencies)
       .filter((name) => name.startsWith('@tauri-apps/'))
       .sort(),
-    ['@tauri-apps/api', '@tauri-apps/plugin-global-shortcut', '@tauri-apps/plugin-notification', '@tauri-apps/plugin-sql'].sort(),
+    ['@tauri-apps/api', '@tauri-apps/plugin-notification', '@tauri-apps/plugin-sql'].sort(),
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
@@ -110,20 +110,6 @@ test('should register reminder and notification helpers', async () => {
   assert.match(mainSource, /startReminderScheduler/)
 })
 
-test('should register the global shortcut capability and helper', async () => {
-  const [capabilities, shortcutSource, mainSource] = await Promise.all([
-    readProjectFile('src-tauri/capabilities/default.json'),
-    readProjectFile('src/globalShortcut.ts'),
-    readProjectFile('src/main.tsx'),
-  ])
-  const capabilitiesConfig = JSON.parse(capabilities)
-
-  assert.ok(capabilitiesConfig.permissions.includes('global-shortcut:allow-register'))
-  assert.match(shortcutSource, /CommandOrControl\+Shift\+O/)
-  assert.match(shortcutSource, /activateAppWindow/)
-  assert.match(mainSource, /registerGlobalShortcut/)
-})
-
 test('should initialize tray and window shell outside React', async () => {
   const [appShellSource, mainSource] = await Promise.all([
     readProjectFile('src/appShell.ts'),
@@ -137,12 +123,16 @@ test('should initialize tray and window shell outside React', async () => {
 })
 
 test('should toggle the window only on tray mouse up', async () => {
-  const traySource = await readProjectFile('src/tray.ts')
+  const [traySource, windowSource] = await Promise.all([
+    readProjectFile('src/tray.ts'),
+    readProjectFile('src/windowBehavior.ts'),
+  ])
 
   assert.match(traySource, /TRAY_ID = 'okorunner-main-tray'/)
   assert.match(traySource, /removeById\(TRAY_ID\)/)
   assert.match(traySource, /buttonState === 'Up'/)
   assert.match(traySource, /showMenuOnLeftClick: false/)
+  assert.match(windowSource, /activateAppWindow/)
 })
 
 test('should register only the required Rust Tauri plugins', async () => {
@@ -153,12 +143,10 @@ test('should register only the required Rust Tauri plugins', async () => {
 
   assert.match(cargoManifest, /^tauri = \{ version = "2", features = \["tray-icon"\] \}$/m)
   assert.match(cargoManifest, /^tauri-plugin-sql = \{ version = "2", features = \["sqlite"\] \}$/m)
-  assert.match(cargoManifest, /^tauri-plugin-global-shortcut = "2"$/m)
   assert.match(cargoManifest, /^tauri-plugin-notification = "2"$/m)
   assert.match(rustSource, /tauri_plugin_sql::Builder::default\(\)/)
   assert.match(rustSource, /\.add_migrations\(db::DATABASE_URL, db::migrations\(\)\)/)
-  assert.match(rustSource, /tauri_plugin_global_shortcut::Builder::new\(\)\.build\(\)/)
   assert.match(rustSource, /tauri_plugin_notification::init\(\)/)
   assert.match(rustSource, /ActivationPolicy::Accessory/)
-  assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 3)
+  assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 2)
 })
