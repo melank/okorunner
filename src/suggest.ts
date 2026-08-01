@@ -33,6 +33,7 @@ type InsertResult = {
 
 type PendingSuggestionRow = {
   id: number
+  task_id: number
   title: string
   suggested_at: string
 }
@@ -73,14 +74,10 @@ export async function loadTaskScores(
   return scores
 }
 
-export async function getLatestPendingSuggestion(): Promise<{
-  id: number
-  title: string
-  suggestedAt: string
-} | null> {
+export async function getCurrentSuggestion(): Promise<Suggestion | null> {
   const database = await getDatabase()
   const rows = await database.select<PendingSuggestionRow[]>(
-    `SELECT s.id, t.title, s.suggested_at
+    `SELECT s.id, s.task_id, t.title, s.suggested_at
      FROM suggestions s
      INNER JOIN tasks t ON t.id = s.task_id
      WHERE s.done_at IS NULL
@@ -95,9 +92,42 @@ export async function getLatestPendingSuggestion(): Promise<{
 
   return {
     id: row.id,
+    taskId: row.task_id,
     title: row.title,
+    timeBand: getTimeBand(new Date(row.suggested_at)),
     suggestedAt: row.suggested_at,
   }
+}
+
+export async function getLatestPendingSuggestion(): Promise<{
+  id: number
+  title: string
+  suggestedAt: string
+} | null> {
+  const current = await getCurrentSuggestion()
+  if (current === null) {
+    return null
+  }
+
+  return {
+    id: current.id,
+    title: current.title,
+    suggestedAt: current.suggestedAt,
+  }
+}
+
+export async function completeSuggestion(
+  suggestionId: number,
+  motivated: boolean,
+  now: Date = new Date(),
+): Promise<void> {
+  const database = await getDatabase()
+  await database.execute(
+    `UPDATE suggestions
+     SET done_at = $1, motivated = $2
+     WHERE id = $3 AND done_at IS NULL`,
+    [formatLocalDateTime(now), motivated ? 1 : 0, suggestionId],
+  )
 }
 
 export async function suggestNextTask(

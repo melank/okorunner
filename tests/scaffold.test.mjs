@@ -32,6 +32,8 @@ test('should define the required application metadata and connect Vite to Tauri'
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
+  assert.equal(config.app.windows[0].width, 360)
+  assert.equal(config.app.windows[0].visible, false)
   assert.equal(config.build.beforeDevCommand, 'npm run dev')
   assert.equal(config.build.beforeBuildCommand, 'npm run build')
   assert.equal(config.build.frontendDist, '../dist')
@@ -54,6 +56,8 @@ test('should render the application title from the React entry point', async () 
 
   assert.match(source, /const APPLICATION_TITLE = 'やる気起こrunner'/)
   assert.match(source, /suggestNextTask\(/)
+  assert.match(source, /completeSuggestion\(/)
+  assert.match(source, /initializeAppShell\(\)/)
   assert.match(source, /createRoot\(rootElement\)\.render/)
 })
 
@@ -80,6 +84,14 @@ test('should link proposal logic documentation from README', async () => {
   assert.match(readme, /docs\/suggestion-logic\.md/)
   assert.match(doc, /ε-greedy/)
   assert.match(doc, /EPSILON/)
+})
+
+test('should record Done completion in suggestions', async () => {
+  const source = await readProjectFile('src/suggest.ts')
+
+  assert.match(source, /completeSuggestion/)
+  assert.match(source, /SET done_at = \$1, motivated = \$2/)
+  assert.match(source, /getCurrentSuggestion/)
 })
 
 test('should register reminder and notification helpers', async () => {
@@ -111,12 +123,34 @@ test('should register the global shortcut capability and helper', async () => {
   assert.match(mainSource, /registerGlobalShortcut/)
 })
 
+test('should initialize tray and window shell outside React', async () => {
+  const [appShellSource, mainSource] = await Promise.all([
+    readProjectFile('src/appShell.ts'),
+    readProjectFile('src/main.tsx'),
+  ])
+
+  assert.match(appShellSource, /initializeAppShell/)
+  assert.match(appShellSource, /registerTrayIcon/)
+  assert.match(mainSource, /initializeAppShell\(\)/)
+  assert.doesNotMatch(mainSource, /hideMainWindowOnClose/)
+})
+
+test('should toggle the window only on tray mouse up', async () => {
+  const traySource = await readProjectFile('src/tray.ts')
+
+  assert.match(traySource, /TRAY_ID = 'okorunner-main-tray'/)
+  assert.match(traySource, /removeById\(TRAY_ID\)/)
+  assert.match(traySource, /buttonState === 'Up'/)
+  assert.match(traySource, /showMenuOnLeftClick: false/)
+})
+
 test('should register only the required Rust Tauri plugins', async () => {
   const [cargoManifest, rustSource] = await Promise.all([
     readProjectFile('src-tauri/Cargo.toml'),
     readProjectFile('src-tauri/src/lib.rs'),
   ])
 
+  assert.match(cargoManifest, /^tauri = \{ version = "2", features = \["tray-icon"\] \}$/m)
   assert.match(cargoManifest, /^tauri-plugin-sql = \{ version = "2", features = \["sqlite"\] \}$/m)
   assert.match(cargoManifest, /^tauri-plugin-global-shortcut = "2"$/m)
   assert.match(cargoManifest, /^tauri-plugin-notification = "2"$/m)
@@ -124,5 +158,6 @@ test('should register only the required Rust Tauri plugins', async () => {
   assert.match(rustSource, /\.add_migrations\(db::DATABASE_URL, db::migrations\(\)\)/)
   assert.match(rustSource, /tauri_plugin_global_shortcut::Builder::new\(\)\.build\(\)/)
   assert.match(rustSource, /tauri_plugin_notification::init\(\)/)
+  assert.match(rustSource, /ActivationPolicy::Accessory/)
   assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 3)
 })

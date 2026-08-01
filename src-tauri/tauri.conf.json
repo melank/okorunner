@@ -14,8 +14,11 @@
       {
         "label": "main",
         "title": "やる気起こrunner",
-        "width": 800,
-        "height": 600
+        "width": 360,
+        "height": 420,
+        "resizable": false,
+        "visible": false,
+        "skipTaskbar": true
       }
     ],
     "security": {

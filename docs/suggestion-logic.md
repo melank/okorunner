@@ -95,7 +95,7 @@ else:
 INSERT INTO suggestions (task_id, suggested_at) VALUES (?, ?)
 ```
 
-`done_at` と `motivated` は、ユーザーが Done 操作したときに後続フェーズで更新する予定です（現時点の UI では未実装）。
+`done_at` と `motivated` は、ユーザーが Done / 「やる気が出た Done」を押したときに更新されます。
 
 ## 実装ファイル
 
@@ -108,6 +108,5 @@ INSERT INTO suggestions (task_id, suggested_at) VALUES (?, ?)
 
 ## 今後の拡張
 
-- Done / 「やる気が出た Done」操作で `suggestions` を更新し、スコア学習を実際に回す
 - 時間帯の境界や ε を設定で変えられるようにする
 - Thompson sampling など別のバンディット手法への差し替え
