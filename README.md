@@ -28,6 +28,14 @@ cargo check --manifest-path src-tauri/Cargo.toml
 npm run tauri dev      # macOS 開発ウィンドウを起動
 ```
 
+初回の `cargo` / `tauri` 実行時に `src-tauri/gen/` が生成される（ビルド成果物のため Git 管理外）。
+
+## 公開リポジトリについて
+
+- ソースは公開しているが、**個人用プロジェクト**であり再配布・商用利用の許諾はしない（[LICENSE](LICENSE) 参照）
+- 秘密情報はコミットしない。ローカルでは [gitleaks](https://github.com/gitleaks/gitleaks) の pre-commit と CI でスキャンする
+- アイコンは Tauri 雛形のプレースホルダ（後で差し替え予定）
+
 ## ライセンス / author
 
-melank 単著。個人利用のため配布は想定しない。
+melank 単著。All Rights Reserved。

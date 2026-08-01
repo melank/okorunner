@@ -27,3 +27,4 @@ secrets/
 target/
 .cargo/
 .rustup/
+src-tauri/gen/
