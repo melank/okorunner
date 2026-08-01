@@ -1,7 +1,7 @@
-import Database from '@tauri-apps/plugin-sql'
-import { DATABASE_URL, type Task } from './db'
+import { getDatabase } from './database'
 import { pickTask } from './suggestLogic'
-import { assertTauriRuntime } from './tauriRuntime'
+import { getEpsilon } from './settings'
+import { listActiveTasks } from './tasks'
 import {
   formatLocalDateTime,
   getTimeBand,
@@ -9,26 +9,14 @@ import {
   type TimeBand,
 } from './timeBand'
 
-type SqlDatabase = Awaited<ReturnType<typeof Database.load>>
-
-let databaseInstance: SqlDatabase | null = null
-
-export type Suggestion = {
-  id: number
-  taskId: number
-  title: string
-  timeBand: TimeBand
-  suggestedAt: string
+type InsertResult = {
+  lastInsertId: number
 }
 
 type SuggestionHistoryRow = {
   task_id: number
   suggested_at: string
   motivated: number | null
-}
-
-type InsertResult = {
-  lastInsertId: number
 }
 
 type PendingSuggestionRow = {
@@ -38,18 +26,19 @@ type PendingSuggestionRow = {
   suggested_at: string
 }
 
-async function getDatabase(): Promise<SqlDatabase> {
-  assertTauriRuntime()
-  databaseInstance ??= await Database.load(DATABASE_URL)
-  return databaseInstance
+export type Suggestion = {
+  id: number
+  taskId: number
+  title: string
+  timeBand: TimeBand
+  suggestedAt: string
 }
 
 export async function loadTaskScores(
   timeBand: TimeBand,
-  database?: SqlDatabase,
 ): Promise<Map<number, { motivated: number; done: number }>> {
-  const db = database ?? await getDatabase()
-  const rows = await db.select<SuggestionHistoryRow[]>(
+  const database = await getDatabase()
+  const rows = await database.select<SuggestionHistoryRow[]>(
     `SELECT task_id, suggested_at, motivated
      FROM suggestions
      WHERE done_at IS NOT NULL`,
@@ -122,12 +111,11 @@ export async function suggestNextTask(
   },
 ): Promise<Suggestion> {
   const database = await getDatabase()
-  const tasks = await database.select<Task[]>(
-    'SELECT id, title, active FROM tasks WHERE active = 1 ORDER BY id',
-  )
+  const tasks = await listActiveTasks()
   const timeBand = getTimeBand(now)
-  const scores = await loadTaskScores(timeBand, database)
-  const task = pickTask(tasks, scores, random, options?.excludeTaskIds ?? [])
+  const scores = await loadTaskScores(timeBand)
+  const epsilon = await getEpsilon()
+  const task = pickTask(tasks, scores, random, options?.excludeTaskIds ?? [], epsilon)
   const suggestedAt = formatLocalDateTime(now)
 
   if (options?.replaceSuggestionId !== undefined) {

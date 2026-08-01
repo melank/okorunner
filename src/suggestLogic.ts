@@ -31,6 +31,7 @@ export function pickTask(
   scores: Map<number, TaskScore>,
   random: () => number,
   excludeTaskIds: number[] = [],
+  epsilon: number = EPSILON,
 ): Task {
   const candidates = filterTasks(tasks, excludeTaskIds)
 
@@ -38,7 +39,7 @@ export function pickTask(
     throw new Error('提案できるタスクがありません')
   }
 
-  if (random() < EPSILON) {
+  if (random() < epsilon) {
     const index = Math.floor(random() * candidates.length)
     return candidates[index]
   }

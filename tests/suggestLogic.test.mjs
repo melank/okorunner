@@ -31,7 +31,7 @@ test('pickTask should prefer the highest motivated rate in the current time band
     [2, { motivated: 2, done: 2 }],
   ])
 
-  const picked = pickTask(tasks, scores, () => 0.9)
+  const picked = pickTask(tasks, scores, () => 0.9, [], 0.2)
   assert.equal(picked.id, 2)
   assert.equal(motivatedRate(scores.get(2)), 1)
 })
@@ -60,4 +60,18 @@ test('filterTasks should keep the original pool when every task is excluded', ()
   const filtered = filterTasks(tasks, [1])
   assert.equal(filtered.length, 1)
   assert.equal(filtered[0]?.id, 1)
+})
+
+test('pickTask should honor a custom epsilon threshold', () => {
+  const tasks = [
+    { id: 1, title: 'A', active: 1 },
+    { id: 2, title: 'B', active: 1 },
+  ]
+  const scores = new Map([
+    [1, { motivated: 0, done: 1 }],
+    [2, { motivated: 2, done: 2 }],
+  ])
+
+  const picked = pickTask(tasks, scores, () => 0.5, [], 0.4)
+  assert.equal(picked.id, 2)
 })

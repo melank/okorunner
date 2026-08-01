@@ -33,6 +33,7 @@ test('should define the required application metadata and connect Vite to Tauri'
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
   assert.equal(config.app.windows[0].width, 360)
+  assert.equal(config.app.windows[0].height, 480)
   assert.equal(config.app.windows[0].visible, false)
   assert.equal(config.build.beforeDevCommand, 'npm run dev')
   assert.equal(config.build.beforeBuildCommand, 'npm run build')
@@ -52,20 +53,24 @@ test('should define the required application metadata and connect Vite to Tauri'
 })
 
 test('should render the application title from the React entry point', async () => {
-  const source = await readProjectFile('src/main.tsx')
+  const [appSource, mainSource] = await Promise.all([
+    readProjectFile('src/App.tsx'),
+    readProjectFile('src/main.tsx'),
+  ])
 
-  assert.match(source, /const APPLICATION_TITLE = 'やる気起こrunner'/)
-  assert.match(source, /suggestNextTask\(/)
-  assert.match(source, /completeSuggestion\(/)
-  assert.match(source, /viewState/)
-  assert.match(source, /initializeAppShell\(\)/)
-  assert.match(source, /createRoot\(rootElement\)\.render/)
+  assert.match(appSource, /const APPLICATION_TITLE = 'やる気起こrunner'/)
+  assert.match(appSource, /SuggestionView/)
+  assert.match(appSource, /TasksView/)
+  assert.match(mainSource, /initializeAppShell\(\)/)
+  assert.match(mainSource, /createRoot\(rootElement\)\.render/)
 })
 
 test('should define the SQLite schema and initial task seed', async () => {
-  const [schema, seed, capabilities] = await Promise.all([
+  const [schema, seed, sortOrderMigration, settingsMigration, capabilities] = await Promise.all([
     readProjectFile('src-tauri/migrations/001_schema.sql'),
     readProjectFile('src-tauri/migrations/002_seed_tasks.sql'),
+    readProjectFile('src-tauri/migrations/003_task_sort_order.sql'),
+    readProjectFile('src-tauri/migrations/004_settings.sql'),
     readProjectFile('src-tauri/capabilities/default.json'),
   ])
   const capabilitiesConfig = JSON.parse(capabilities)
@@ -73,6 +78,8 @@ test('should define the SQLite schema and initial task seed', async () => {
   assert.match(schema, /CREATE TABLE tasks/)
   assert.match(schema, /CREATE TABLE suggestions/)
   assert.match(seed, /INSERT INTO tasks/)
+  assert.match(sortOrderMigration, /sort_order/)
+  assert.match(settingsMigration, /CREATE TABLE settings/)
   assert.ok(capabilitiesConfig.permissions.includes('sql:allow-execute'))
 })
 
@@ -85,8 +92,8 @@ test('should link documentation from README', async () => {
 
   assert.match(readme, /docs\/ROADMAP\.md/)
   assert.match(readme, /docs\/suggestion-logic\.md/)
-  assert.match(roadmap, /Phase 1/)
-  assert.match(roadmap, /MVP/)
+  assert.match(roadmap, /\| 1 \|/)
+  assert.match(roadmap, /Phase 8/)
   assert.match(doc, /ε-greedy/)
   assert.match(doc, /EPSILON/)
 })
@@ -122,6 +129,7 @@ test('should toggle the window only on tray mouse up', async () => {
   assert.match(traySource, /buttonState === 'Up'/)
   assert.match(traySource, /showMenuOnLeftClick: false/)
   assert.match(windowSource, /activateAppWindow/)
+  assert.match(windowSource, /positionWindowNearTray/)
 })
 
 test('should register only the required Rust Tauri plugins', async () => {
