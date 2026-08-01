@@ -9,6 +9,7 @@ const TAURI_PACKAGES = [
   '@tauri-apps/api/core',
   '@tauri-apps/plugin-sql',
   '@tauri-apps/plugin-global-shortcut',
+  '@tauri-apps/plugin-notification',
 ]
 
 export default defineConfig({

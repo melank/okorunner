@@ -28,7 +28,7 @@ test('should define the required application metadata and connect Vite to Tauri'
     Object.keys(packageManifest.dependencies)
       .filter((name) => name.startsWith('@tauri-apps/'))
       .sort(),
-    ['@tauri-apps/api', '@tauri-apps/plugin-global-shortcut', '@tauri-apps/plugin-sql'].sort(),
+    ['@tauri-apps/api', '@tauri-apps/plugin-global-shortcut', '@tauri-apps/plugin-notification', '@tauri-apps/plugin-sql'].sort(),
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
@@ -80,6 +80,21 @@ test('should link proposal logic documentation from README', async () => {
   assert.match(readme, /docs\/suggestion-logic\.md/)
   assert.match(doc, /ε-greedy/)
   assert.match(doc, /EPSILON/)
+})
+
+test('should register reminder and notification helpers', async () => {
+  const [capabilities, reminderSource, notifySource, mainSource] = await Promise.all([
+    readProjectFile('src-tauri/capabilities/default.json'),
+    readProjectFile('src/reminder.ts'),
+    readProjectFile('src/reminderNotify.ts'),
+    readProjectFile('src/main.tsx'),
+  ])
+  const capabilitiesConfig = JSON.parse(capabilities)
+
+  assert.ok(capabilitiesConfig.permissions.includes('notification:default'))
+  assert.match(reminderSource, /REMINDER_INTERVAL_MS/)
+  assert.match(notifySource, /sendDoneReminder/)
+  assert.match(mainSource, /startReminderScheduler/)
 })
 
 test('should register the global shortcut capability and helper', async () => {

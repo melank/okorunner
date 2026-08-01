@@ -6,7 +6,8 @@ import {
   registerGlobalShortcut,
   unregisterGlobalShortcut,
 } from './globalShortcut'
-import { suggestNextTask, TIME_BAND_LABELS, type Suggestion } from './suggest'
+import { startReminderScheduler } from './reminderScheduler'
+import { getLatestPendingSuggestion, suggestNextTask, TIME_BAND_LABELS, type Suggestion } from './suggest'
 import { formatTauriError } from './tauriRuntime'
 import './styles.css'
 
@@ -63,6 +64,18 @@ function App() {
       void unregisterGlobalShortcut()
     }
   }, [loadSuggestion])
+
+  useEffect(() => {
+    return startReminderScheduler({
+      getPendingSuggestion: async () => {
+        try {
+          return await getLatestPendingSuggestion()
+        } catch {
+          return null
+        }
+      },
+    })
+  }, [])
 
   return (
     <main className="app">

@@ -31,6 +31,12 @@ type InsertResult = {
   lastInsertId: number
 }
 
+type PendingSuggestionRow = {
+  id: number
+  title: string
+  suggested_at: string
+}
+
 async function getDatabase(): Promise<SqlDatabase> {
   assertTauriRuntime()
   databaseInstance ??= await Database.load(DATABASE_URL)
@@ -65,6 +71,33 @@ export async function loadTaskScores(
   }
 
   return scores
+}
+
+export async function getLatestPendingSuggestion(): Promise<{
+  id: number
+  title: string
+  suggestedAt: string
+} | null> {
+  const database = await getDatabase()
+  const rows = await database.select<PendingSuggestionRow[]>(
+    `SELECT s.id, t.title, s.suggested_at
+     FROM suggestions s
+     INNER JOIN tasks t ON t.id = s.task_id
+     WHERE s.done_at IS NULL
+     ORDER BY s.suggested_at DESC
+     LIMIT 1`,
+  )
+
+  const row = rows[0]
+  if (row === undefined) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    title: row.title,
+    suggestedAt: row.suggested_at,
+  }
 }
 
 export async function suggestNextTask(
