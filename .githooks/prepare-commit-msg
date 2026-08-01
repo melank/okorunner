@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+set -eu
+
+commit_msg_file=$1
+
+# Cursor may append agent attribution; keep commits attributed to the human author only.
+sed -i '' \
+  -e '/^[Cc]o-[Aa]uthored-[Bb]y:.*cursoragent@cursor\.com/d' \
+  -e '/^[Mm]ade-[Ww]ith:.*[Cc]ursor/d' \
+  "$commit_msg_file"

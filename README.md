@@ -38,4 +38,4 @@ npm run tauri dev      # macOS 開発ウィンドウを起動
 
 ## ライセンス / author
 
-melank 単著。All Rights Reserved。
+melank。All Rights Reserved。
