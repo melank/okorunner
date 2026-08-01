@@ -19,7 +19,6 @@
 
 ## ドキュメント
 
-- [ロードマップ](docs/ROADMAP.md) — 開発フェーズと今後の優先順位
 - [提案ロジック](docs/suggestion-logic.md) — 時間帯・スコア・ε-greedy の仕様
 
 ## 開発
@@ -39,7 +38,7 @@ npm run tauri dev      # macOS 開発ウィンドウを起動
 
 - ソースは公開しているが、**個人用プロジェクト**であり再配布・商用利用の許諾はしない（[LICENSE](LICENSE) 参照）
 - 秘密情報はコミットしない。ローカルでは [gitleaks](https://github.com/gitleaks/gitleaks) の pre-commit と CI でスキャンする
-- アイコンは Tauri 雛形のプレースホルダ（後で差し替え予定）
+- アイコンは `assets/app-icon.png` から生成（`npx tauri icon assets/app-icon.png -o src-tauri/icons`）
 
 ## ライセンス / author
 

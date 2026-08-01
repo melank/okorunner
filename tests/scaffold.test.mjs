@@ -84,16 +84,13 @@ test('should define the SQLite schema and initial task seed', async () => {
 })
 
 test('should link documentation from README', async () => {
-  const [readme, roadmap, doc] = await Promise.all([
+  const [readme, doc] = await Promise.all([
     readProjectFile('README.md'),
-    readProjectFile('docs/ROADMAP.md'),
     readProjectFile('docs/suggestion-logic.md'),
   ])
 
-  assert.match(readme, /docs\/ROADMAP\.md/)
   assert.match(readme, /docs\/suggestion-logic\.md/)
-  assert.match(roadmap, /\| 1 \|/)
-  assert.match(roadmap, /Phase 8/)
+  assert.doesNotMatch(readme, /docs\/ROADMAP\.md/)
   assert.match(doc, /ε-greedy/)
   assert.match(doc, /EPSILON/)
 })
