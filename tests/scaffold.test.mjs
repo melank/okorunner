@@ -47,7 +47,7 @@ test('should render the application title from the React entry point', async () 
   const source = await readProjectFile('src/main.tsx')
 
   assert.match(source, /const APPLICATION_TITLE = 'やる気起こrunner'/)
-  assert.match(source, /listActiveTasks\(\)/)
+  assert.match(source, /suggestNextTask\(/)
   assert.match(source, /createRoot\(rootElement\)\.render/)
 })
 

@@ -1,49 +1,48 @@
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { listActiveTasks, type Task } from './db'
+import { suggestNextTask, TIME_BAND_LABELS, type Suggestion } from './suggest'
 import './styles.css'
 
 const APPLICATION_TITLE = 'やる気起こrunner'
 
 function App() {
-  const [tasks, setTasks] = useState<Task[] | null>(null)
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    let cancelled = false
+  const loadSuggestion = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
 
-    listActiveTasks()
-      .then((loadedTasks) => {
-        if (!cancelled) {
-          setTasks(loadedTasks)
-        }
-      })
-      .catch((loadError: unknown) => {
-        if (!cancelled) {
-          const message =
-            loadError instanceof Error ? loadError.message : 'タスクの読み込みに失敗しました'
-          setError(message)
-        }
-      })
-
-    return () => {
-      cancelled = true
+    try {
+      const nextSuggestion = await suggestNextTask()
+      setSuggestion(nextSuggestion)
+    } catch (loadError: unknown) {
+      const message =
+        loadError instanceof Error ? loadError.message : '提案の取得に失敗しました'
+      setError(message)
+      setSuggestion(null)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    void loadSuggestion()
+  }, [loadSuggestion])
 
   return (
     <main className="app">
       <h1>{APPLICATION_TITLE}</h1>
       {error !== null && <p className="status status-error">{error}</p>}
-      {error === null && tasks === null && <p className="status">読み込み中…</p>}
-      {error === null && tasks !== null && (
-        <section className="task-list">
-          <p className="status">{tasks.length}件のタスク</p>
-          <ul>
-            {tasks.map((task) => (
-              <li key={task.id}>{task.title}</li>
-            ))}
-          </ul>
+      {error === null && isLoading && <p className="status">提案を選んでいます…</p>}
+      {error === null && !isLoading && suggestion !== null && (
+        <section className="suggestion">
+          <p className="status">時間帯: {TIME_BAND_LABELS[suggestion.timeBand]}</p>
+          <p className="suggestion-title">{suggestion.title}</p>
+          <button className="button" type="button" onClick={() => void loadSuggestion()}>
+            別の提案
+          </button>
         </section>
       )}
     </main>
