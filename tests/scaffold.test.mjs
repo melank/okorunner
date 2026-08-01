@@ -62,6 +62,17 @@ test('should define the SQLite schema and initial task seed', async () => {
   assert.match(seed, /INSERT INTO tasks/)
 })
 
+test('should link proposal logic documentation from README', async () => {
+  const [readme, doc] = await Promise.all([
+    readProjectFile('README.md'),
+    readProjectFile('docs/suggestion-logic.md'),
+  ])
+
+  assert.match(readme, /docs\/suggestion-logic\.md/)
+  assert.match(doc, /ε-greedy/)
+  assert.match(doc, /EPSILON/)
+})
+
 test('should register only the required Rust Tauri plugins', async () => {
   const [cargoManifest, rustSource] = await Promise.all([
     readProjectFile('src-tauri/Cargo.toml'),

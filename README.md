@@ -15,7 +15,11 @@
 
 - **Tauri 2**（Rust + TypeScript / React）— macOS メニューバー常駐アプリ
 - **SQLite**（`tauri-plugin-sql`）— 履歴の永続化
-- 提案ロジック — 時間帯 × タスクの ε-greedy
+- 提案ロジック — 時間帯 × タスクの ε-greedy（詳細は [docs/suggestion-logic.md](docs/suggestion-logic.md)）
+
+## ドキュメント
+
+- [提案ロジック](docs/suggestion-logic.md) — 時間帯・スコア・ε-greedy の仕様
 
 ## 開発
 
