@@ -32,9 +32,12 @@ test('should define the required application metadata and connect Vite to Tauri'
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
+  assert.equal(config.app.windows[0].label, 'main')
   assert.equal(config.app.windows[0].width, 360)
-  assert.equal(config.app.windows[0].height, 480)
+  assert.equal(config.app.windows[0].height, 400)
   assert.equal(config.app.windows[0].visible, false)
+  assert.equal(config.app.windows[1].label, 'manage')
+  assert.equal(config.app.windows[1].resizable, true)
   assert.equal(config.build.beforeDevCommand, 'npm run dev')
   assert.equal(config.build.beforeBuildCommand, 'npm run build')
   assert.equal(config.build.frontendDist, '../dist')
@@ -52,25 +55,33 @@ test('should define the required application metadata and connect Vite to Tauri'
   )
 })
 
-test('should render the application title from the React entry point', async () => {
-  const [appSource, mainSource] = await Promise.all([
-    readProjectFile('src/App.tsx'),
+test('should render popover and manage UIs from the React entry point', async () => {
+  const [popoverSource, manageSource, mainSource] = await Promise.all([
+    readProjectFile('src/PopoverApp.tsx'),
+    readProjectFile('src/ManageApp.tsx'),
     readProjectFile('src/main.tsx'),
   ])
 
-  assert.match(appSource, /const APPLICATION_TITLE = 'やる気起こrunner'/)
-  assert.match(appSource, /SuggestionView/)
-  assert.match(appSource, /TasksView/)
+  assert.match(popoverSource, /const APPLICATION_TITLE = 'やる気起こrunner'/)
+  assert.match(popoverSource, /SuggestionView/)
+  assert.match(popoverSource, /openManageWindow/)
+  assert.match(manageSource, /TasksView/)
+  assert.match(manageSource, /StatsView/)
+  assert.match(manageSource, /SettingsView/)
   assert.match(mainSource, /initializeAppShell\(\)/)
+  assert.match(mainSource, /PopoverApp/)
+  assert.match(mainSource, /ManageApp/)
+  assert.match(mainSource, /MAIN_WINDOW_LABEL/)
   assert.match(mainSource, /createRoot\(rootElement\)\.render/)
 })
 
 test('should define the SQLite schema and initial task seed', async () => {
-  const [schema, seed, sortOrderMigration, settingsMigration, capabilities] = await Promise.all([
+  const [schema, seed, sortOrderMigration, settingsMigration, deletedMigration, capabilities] = await Promise.all([
     readProjectFile('src-tauri/migrations/001_schema.sql'),
     readProjectFile('src-tauri/migrations/002_seed_tasks.sql'),
     readProjectFile('src-tauri/migrations/003_task_sort_order.sql'),
     readProjectFile('src-tauri/migrations/004_settings.sql'),
+    readProjectFile('src-tauri/migrations/005_task_deleted.sql'),
     readProjectFile('src-tauri/capabilities/default.json'),
   ])
   const capabilitiesConfig = JSON.parse(capabilities)
@@ -80,7 +91,9 @@ test('should define the SQLite schema and initial task seed', async () => {
   assert.match(seed, /INSERT INTO tasks/)
   assert.match(sortOrderMigration, /sort_order/)
   assert.match(settingsMigration, /CREATE TABLE settings/)
+  assert.match(deletedMigration, /deleted/)
   assert.ok(capabilitiesConfig.permissions.includes('sql:allow-execute'))
+  assert.deepEqual(capabilitiesConfig.windows, ['main', 'manage'])
 })
 
 test('should link documentation from README', async () => {
@@ -99,8 +112,18 @@ test('should record Done completion in suggestions', async () => {
   const source = await readProjectFile('src/suggest.ts')
 
   assert.match(source, /completeSuggestion/)
+  assert.match(source, /undoSuggestionCompletion/)
+  assert.match(source, /listRecentCompletions/)
   assert.match(source, /excludeTaskIds/)
   assert.match(source, /replaceSuggestionId/)
+})
+
+test('should delete tasks based on done execution count', async () => {
+  const source = await readProjectFile('src/tasks.ts')
+
+  assert.match(source, /deleteTask/)
+  assert.match(source, /deleted = 1/)
+  assert.match(source, /listVisibleTasks/)
 })
 
 test('should initialize tray and window shell outside React', async () => {
@@ -111,11 +134,12 @@ test('should initialize tray and window shell outside React', async () => {
 
   assert.match(appShellSource, /initializeAppShell/)
   assert.match(appShellSource, /registerTrayIcon/)
+  assert.match(appShellSource, /MAIN_WINDOW_LABEL/)
   assert.match(mainSource, /initializeAppShell\(\)/)
   assert.doesNotMatch(mainSource, /hideMainWindowOnClose/)
 })
 
-test('should toggle the window only on tray mouse up', async () => {
+test('should toggle the popover window only on tray mouse up', async () => {
   const [traySource, windowSource] = await Promise.all([
     readProjectFile('src/tray.ts'),
     readProjectFile('src/windowBehavior.ts'),
@@ -125,7 +149,11 @@ test('should toggle the window only on tray mouse up', async () => {
   assert.match(traySource, /removeById\(TRAY_ID\)/)
   assert.match(traySource, /buttonState === 'Up'/)
   assert.match(traySource, /showMenuOnLeftClick: false/)
-  assert.match(windowSource, /activateAppWindow/)
+  assert.match(traySource, /createTrayMenu/)
+  assert.match(traySource, /loadTrayIcon/)
+  assert.match(traySource, /togglePopoverWindow/)
+  assert.match(windowSource, /activatePopoverWindow/)
+  assert.match(windowSource, /openManageWindow/)
   assert.match(windowSource, /positionWindowNearTray/)
 })
 
@@ -135,7 +163,7 @@ test('should register only the required Rust Tauri plugins', async () => {
     readProjectFile('src-tauri/src/lib.rs'),
   ])
 
-  assert.match(cargoManifest, /^tauri = \{ version = "2", features = \["tray-icon"\] \}$/m)
+  assert.match(cargoManifest, /^tauri = \{ version = "2", features = \["tray-icon", "image-png"\] \}$/m)
   assert.match(cargoManifest, /^tauri-plugin-sql = \{ version = "2", features = \["sqlite"\] \}$/m)
   assert.match(rustSource, /tauri_plugin_sql::Builder::default\(\)/)
   assert.match(rustSource, /\.add_migrations\(db::DATABASE_URL, db::migrations\(\)\)/)

@@ -34,6 +34,24 @@ export type Suggestion = {
   suggestedAt: string
 }
 
+export type RecentCompletion = {
+  id: number
+  taskId: number
+  title: string
+  timeBand: TimeBand
+  doneAt: string
+  motivated: boolean
+}
+
+type CompletedSuggestionRow = {
+  id: number
+  task_id: number
+  title: string
+  suggested_at: string
+  done_at: string
+  motivated: number | null
+}
+
 export async function loadTaskScores(
   timeBand: TimeBand,
 ): Promise<Map<number, { motivated: number; done: number }>> {
@@ -100,6 +118,49 @@ export async function completeSuggestion(
      WHERE id = $3 AND done_at IS NULL`,
     [formatLocalDateTime(now), motivated ? 1 : 0, suggestionId],
   )
+}
+
+export async function undoSuggestionCompletion(suggestionId: number): Promise<void> {
+  const database = await getDatabase()
+  const rows = await database.select<Array<{ id: number }>>(
+    `SELECT id
+     FROM suggestions
+     WHERE id = $1 AND done_at IS NOT NULL`,
+    [suggestionId],
+  )
+
+  if (rows.length === 0) {
+    throw new Error('取り消せる記録が見つかりません')
+  }
+
+  await database.execute(
+    `UPDATE suggestions
+     SET done_at = NULL, motivated = NULL
+     WHERE id = $1`,
+    [suggestionId],
+  )
+}
+
+export async function listRecentCompletions(limit = 5): Promise<RecentCompletion[]> {
+  const database = await getDatabase()
+  const rows = await database.select<CompletedSuggestionRow[]>(
+    `SELECT s.id, s.task_id, t.title, s.suggested_at, s.done_at, s.motivated
+     FROM suggestions s
+     INNER JOIN tasks t ON t.id = s.task_id
+     WHERE s.done_at IS NOT NULL
+     ORDER BY s.done_at DESC, s.id DESC
+     LIMIT $1`,
+    [limit],
+  )
+
+  return rows.map((row) => ({
+    id: row.id,
+    taskId: row.task_id,
+    title: row.title,
+    timeBand: getTimeBand(new Date(row.suggested_at)),
+    doneAt: row.done_at,
+    motivated: row.motivated === 1,
+  }))
 }
 
 export async function suggestNextTask(

@@ -4,6 +4,7 @@ import {
   getCurrentSuggestion,
   suggestNextTask,
   TIME_BAND_LABELS,
+  undoSuggestionCompletion,
 } from '../suggest'
 import { formatTauriError } from '../tauriRuntime'
 import { completionMessage, type ViewState } from '../viewState'
@@ -48,10 +49,32 @@ export function SuggestionView() {
 
     try {
       await completeSuggestion(view.suggestion.id, motivated)
-      setView({ kind: 'completed', message: completionMessage(motivated) })
+      setView({
+        kind: 'completed',
+        message: completionMessage(motivated),
+        suggestion: view.suggestion,
+      })
     } catch (completeError: unknown) {
       console.error('Doneの記録に失敗しました', completeError)
       setView({ kind: 'error', message: formatTauriError(completeError) })
+    } finally {
+      setIsCompleting(false)
+    }
+  }, [isCompleting, view])
+
+  const undoCurrentCompletion = useCallback(async () => {
+    if (view.kind !== 'completed' || isCompleting) {
+      return
+    }
+
+    setIsCompleting(true)
+
+    try {
+      await undoSuggestionCompletion(view.suggestion.id)
+      setView({ kind: 'suggestion', suggestion: view.suggestion })
+    } catch (undoError: unknown) {
+      console.error('Doneの取り消しに失敗しました', undoError)
+      setView({ kind: 'error', message: formatTauriError(undoError) })
     } finally {
       setIsCompleting(false)
     }
@@ -87,8 +110,22 @@ export function SuggestionView() {
     return (
       <section className="card card--success" aria-label="記録完了">
         <p className="card__message card__message--success">{view.message}</p>
+        <p className="card__hint">間違えた場合は取り消せます。</p>
         <div className="card__actions">
-          <button className="btn btn--primary" type="button" onClick={() => void loadSuggestion({ forceNew: true })}>
+          <button
+            className="btn btn--secondary"
+            type="button"
+            disabled={isCompleting}
+            onClick={() => void undoCurrentCompletion()}
+          >
+            取り消す
+          </button>
+          <button
+            className="btn btn--primary"
+            type="button"
+            disabled={isCompleting}
+            onClick={() => void loadSuggestion({ forceNew: true })}
+          >
             次の提案をもらう
           </button>
         </div>
