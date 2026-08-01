@@ -1,6 +1,7 @@
-import { defaultWindowIcon } from '@tauri-apps/api/app'
 import { TrayIcon, type TrayIconEvent } from '@tauri-apps/api/tray'
-import { toggleAppWindow, type TrayRect } from './windowBehavior'
+import { createTrayMenu } from './trayMenu'
+import { loadTrayIcon } from './trayIcon'
+import { togglePopoverWindow, type TrayRect } from './windowBehavior'
 import { assertTauriRuntime } from './tauriRuntime'
 
 export const TRAY_ID = 'okorunner-main-tray'
@@ -37,10 +38,13 @@ export async function registerTrayIcon(): Promise<() => Promise<void>> {
 
   await removeExistingTray()
 
+  const menu = await createTrayMenu(() => cachedTrayRect)
+
   trayInstance = await TrayIcon.new({
     id: TRAY_ID,
-    icon: await defaultWindowIcon() ?? undefined,
+    icon: await loadTrayIcon(),
     tooltip: 'やる気起こrunner',
+    menu,
     showMenuOnLeftClick: false,
     action: (event) => {
       rememberTrayRect(event)
@@ -50,7 +54,7 @@ export async function registerTrayIcon(): Promise<() => Promise<void>> {
         event.button === 'Left' &&
         event.buttonState === 'Up'
       ) {
-        void toggleAppWindow(cachedTrayRect)
+        void togglePopoverWindow(cachedTrayRect)
       }
     },
   })
