@@ -1,12 +1,17 @@
 import Database from '@tauri-apps/plugin-sql'
 import { DATABASE_URL, type Task } from './db'
 import { pickTask } from './suggestLogic'
+import { assertTauriRuntime } from './tauriRuntime'
 import {
   formatLocalDateTime,
   getTimeBand,
   TIME_BAND_LABELS,
   type TimeBand,
 } from './timeBand'
+
+type SqlDatabase = Awaited<ReturnType<typeof Database.load>>
+
+let databaseInstance: SqlDatabase | null = null
 
 export type Suggestion = {
   id: number
@@ -26,13 +31,18 @@ type InsertResult = {
   lastInsertId: number
 }
 
-async function getDatabase() {
-  return Database.load(DATABASE_URL)
+async function getDatabase(): Promise<SqlDatabase> {
+  assertTauriRuntime()
+  databaseInstance ??= await Database.load(DATABASE_URL)
+  return databaseInstance
 }
 
-export async function loadTaskScores(timeBand: TimeBand): Promise<Map<number, { motivated: number; done: number }>> {
-  const database = await getDatabase()
-  const rows = await database.select<SuggestionHistoryRow[]>(
+export async function loadTaskScores(
+  timeBand: TimeBand,
+  database?: SqlDatabase,
+): Promise<Map<number, { motivated: number; done: number }>> {
+  const db = database ?? await getDatabase()
+  const rows = await db.select<SuggestionHistoryRow[]>(
     `SELECT task_id, suggested_at, motivated
      FROM suggestions
      WHERE done_at IS NOT NULL`,
@@ -66,7 +76,7 @@ export async function suggestNextTask(
     'SELECT id, title, active FROM tasks WHERE active = 1 ORDER BY id',
   )
   const timeBand = getTimeBand(now)
-  const scores = await loadTaskScores(timeBand)
+  const scores = await loadTaskScores(timeBand, database)
   const task = pickTask(tasks, scores, random)
   const suggestedAt = formatLocalDateTime(now)
 

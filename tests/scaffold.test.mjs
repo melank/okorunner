@@ -25,8 +25,10 @@ test('should define the required application metadata and connect Vite to Tauri'
   assert.equal(packageManifest.scripts.build, 'tsc -b && vite build')
   assert.equal(packageManifest.scripts.tauri, 'tauri')
   assert.deepEqual(
-    Object.keys(packageManifest.dependencies).filter((name) => name.startsWith('@tauri-apps/')),
-    ['@tauri-apps/plugin-sql'],
+    Object.keys(packageManifest.dependencies)
+      .filter((name) => name.startsWith('@tauri-apps/'))
+      .sort(),
+    ['@tauri-apps/api', '@tauri-apps/plugin-global-shortcut', '@tauri-apps/plugin-sql'].sort(),
   )
   assert.equal(config.productName, 'やる気起こrunner')
   assert.equal(config.identifier, 'com.melank.okorunner')
@@ -41,6 +43,10 @@ test('should define the required application metadata and connect Vite to Tauri'
   assert.ok(viteConfig.server)
   assert.equal(viteConfig.server.strictPort, true)
   assert.equal(viteConfig.server.port, Number(new URL(config.build.devUrl).port))
+  assert.ok(
+    viteConfig.optimizeDeps?.exclude?.includes('@tauri-apps/plugin-sql'),
+    'Tauri packages must be excluded from Vite pre-bundling',
+  )
 })
 
 test('should render the application title from the React entry point', async () => {
@@ -52,14 +58,17 @@ test('should render the application title from the React entry point', async () 
 })
 
 test('should define the SQLite schema and initial task seed', async () => {
-  const [schema, seed] = await Promise.all([
+  const [schema, seed, capabilities] = await Promise.all([
     readProjectFile('src-tauri/migrations/001_schema.sql'),
     readProjectFile('src-tauri/migrations/002_seed_tasks.sql'),
+    readProjectFile('src-tauri/capabilities/default.json'),
   ])
+  const capabilitiesConfig = JSON.parse(capabilities)
 
   assert.match(schema, /CREATE TABLE tasks/)
   assert.match(schema, /CREATE TABLE suggestions/)
   assert.match(seed, /INSERT INTO tasks/)
+  assert.ok(capabilitiesConfig.permissions.includes('sql:allow-execute'))
 })
 
 test('should link proposal logic documentation from README', async () => {
@@ -71,6 +80,20 @@ test('should link proposal logic documentation from README', async () => {
   assert.match(readme, /docs\/suggestion-logic\.md/)
   assert.match(doc, /ε-greedy/)
   assert.match(doc, /EPSILON/)
+})
+
+test('should register the global shortcut capability and helper', async () => {
+  const [capabilities, shortcutSource, mainSource] = await Promise.all([
+    readProjectFile('src-tauri/capabilities/default.json'),
+    readProjectFile('src/globalShortcut.ts'),
+    readProjectFile('src/main.tsx'),
+  ])
+  const capabilitiesConfig = JSON.parse(capabilities)
+
+  assert.ok(capabilitiesConfig.permissions.includes('global-shortcut:allow-register'))
+  assert.match(shortcutSource, /CommandOrControl\+Shift\+O/)
+  assert.match(shortcutSource, /activateAppWindow/)
+  assert.match(mainSource, /registerGlobalShortcut/)
 })
 
 test('should register only the required Rust Tauri plugins', async () => {

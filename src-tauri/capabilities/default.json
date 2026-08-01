@@ -2,5 +2,15 @@
   "identifier": "default",
   "description": "Default capability for the main application window.",
   "windows": ["main"],
-  "permissions": ["core:default", "sql:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus",
+    "sql:default",
+    "sql:allow-execute",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister"
+  ]
 }
