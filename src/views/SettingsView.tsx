@@ -33,7 +33,7 @@ export function SettingsView() {
       <div className="card__section">
         <h2 className="card__heading">提案の設定</h2>
         <p className="card__hint">
-          ε（イプシロン）はランダム提案の割合です。0に近いほど実績重視、1に近いほど探索が増えます。
+          0に近いほどこの時間帯のやる気実績を優先し、1に近いほど無作為に選びます。
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export function SettingsView() {
         }}
       >
         <label className="field">
-          <span className="field__label">ε（0〜1）</span>
+          <span className="field__label">無作為に選ぶ割合（0〜1）</span>
           <input
             className="field-input"
             type="number"

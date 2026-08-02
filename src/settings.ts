@@ -31,7 +31,7 @@ export async function getEpsilon(): Promise<number> {
 
 export async function setEpsilon(value: number): Promise<void> {
   if (!Number.isFinite(value) || value < MIN_EPSILON || value > MAX_EPSILON) {
-    throw new Error('εは0から1の範囲で指定してください')
+    throw new Error('無作為に選ぶ割合は0から1の範囲で指定してください')
   }
 
   const database = await getDatabase()
