@@ -10,6 +10,13 @@ export function taskDeletionMode(doneCount: number): TaskDeletionMode {
   return doneCount === 0 ? 'physical' : 'logical'
 }
 
+export function shouldPurgeLogicallyDeletedTask(
+  task: { deleted: number },
+  doneCount: number,
+): boolean {
+  return task.deleted === 1 && doneCount === 0
+}
+
 export function deletionConfirmCopy(mode: TaskDeletionMode, title: string): TaskDeletionConfirmCopy {
   if (mode === 'physical') {
     return {

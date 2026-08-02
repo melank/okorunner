@@ -1,7 +1,7 @@
 import { getDatabase } from './database'
 import { pickTask } from './suggestLogic'
 import { getEpsilon } from './settings'
-import { listActiveTasks } from './tasks'
+import { listActiveTasks, purgeLogicallyDeletedTaskIfNoDoneHistory } from './tasks'
 import {
   formatLocalDateTime,
   getTimeBand,
@@ -122,14 +122,15 @@ export async function completeSuggestion(
 
 export async function undoSuggestionCompletion(suggestionId: number): Promise<void> {
   const database = await getDatabase()
-  const rows = await database.select<Array<{ id: number }>>(
-    `SELECT id
+  const rows = await database.select<Array<{ id: number; task_id: number }>>(
+    `SELECT id, task_id
      FROM suggestions
      WHERE id = $1 AND done_at IS NOT NULL`,
     [suggestionId],
   )
 
-  if (rows.length === 0) {
+  const row = rows[0]
+  if (row === undefined) {
     throw new Error('取り消せる記録が見つかりません')
   }
 
@@ -139,6 +140,8 @@ export async function undoSuggestionCompletion(suggestionId: number): Promise<vo
      WHERE id = $1`,
     [suggestionId],
   )
+
+  await purgeLogicallyDeletedTaskIfNoDoneHistory(row.task_id)
 }
 
 export async function listRecentCompletions(limit = 5): Promise<RecentCompletion[]> {

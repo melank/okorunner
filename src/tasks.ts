@@ -1,6 +1,6 @@
 import type { Task } from './db'
 import { getDatabase } from './database'
-import { taskDeletionMode, type TaskDeletionMode } from './taskDeletion'
+import { taskDeletionMode, shouldPurgeLogicallyDeletedTask, type TaskDeletionMode } from './taskDeletion'
 import { swapTaskOrder } from './taskOrder'
 
 type InsertResult = {
@@ -145,4 +145,25 @@ export async function deleteTask(taskId: number): Promise<TaskDeletionMode> {
     [taskId],
   )
   return mode
+}
+
+export async function purgeLogicallyDeletedTaskIfNoDoneHistory(taskId: number): Promise<boolean> {
+  const database = await getDatabase()
+  const rows = await database.select<Array<{ deleted: number }>>(
+    'SELECT deleted FROM tasks WHERE id = $1',
+    [taskId],
+  )
+  const task = rows[0]
+  if (task === undefined) {
+    return false
+  }
+
+  const doneCount = await countTaskDoneExecutions(taskId)
+  if (!shouldPurgeLogicallyDeletedTask(task, doneCount)) {
+    return false
+  }
+
+  await database.execute('DELETE FROM suggestions WHERE task_id = $1', [taskId])
+  await database.execute('DELETE FROM tasks WHERE id = $1', [taskId])
+  return true
 }

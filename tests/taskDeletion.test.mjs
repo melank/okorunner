@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { deletionConfirmCopy, taskDeletionMode } from '../src/taskDeletion.ts'
+import { deletionConfirmCopy, shouldPurgeLogicallyDeletedTask, taskDeletionMode } from '../src/taskDeletion.ts'
 
 test('taskDeletionMode should physically delete tasks without done history', () => {
   assert.equal(taskDeletionMode(0), 'physical')
@@ -22,4 +22,10 @@ test('deletionConfirmCopy should describe physical and logical deletion differen
   assert.match(logical.message, /一覧から削除/)
   assert.match(logical.message, /統計に残ります/)
   assert.equal(logical.confirmLabel, '一覧から削除')
+})
+
+test('shouldPurgeLogicallyDeletedTask should purge only logically deleted tasks without done history', () => {
+  assert.equal(shouldPurgeLogicallyDeletedTask({ deleted: 1 }, 0), true)
+  assert.equal(shouldPurgeLogicallyDeletedTask({ deleted: 1 }, 1), false)
+  assert.equal(shouldPurgeLogicallyDeletedTask({ deleted: 0 }, 0), false)
 })
