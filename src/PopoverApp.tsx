@@ -1,11 +1,41 @@
+import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { SuggestionView } from './views/SuggestionView'
-import { openManageWindow } from './windowBehavior'
+import { openManageWindow, schedulePopoverResize } from './windowBehavior'
 
 const APPLICATION_TITLE = 'やる気起こrunner'
 
+function usePopoverAutoResize(appRef: RefObject<HTMLElement | null>): void {
+  useLayoutEffect(() => {
+    document.documentElement.classList.add('popover-window')
+
+    const target = appRef.current
+    if (target === null) {
+      return () => {
+        document.documentElement.classList.remove('popover-window')
+      }
+    }
+
+    const resize = () => {
+      schedulePopoverResize()
+    }
+
+    resize()
+    const observer = new ResizeObserver(resize)
+    observer.observe(target)
+
+    return () => {
+      observer.disconnect()
+      document.documentElement.classList.remove('popover-window')
+    }
+  }, [appRef])
+}
+
 export function PopoverApp() {
+  const appRef = useRef<HTMLElement>(null)
+  usePopoverAutoResize(appRef)
+
   return (
-    <main className="app app--popover">
+    <main ref={appRef} className="app app--popover">
       <header className="app__header">
         <h1 className="app__title">{APPLICATION_TITLE}</h1>
       </header>

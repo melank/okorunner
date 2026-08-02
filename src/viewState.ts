@@ -7,5 +7,9 @@ export type ViewState =
   | { kind: 'completed'; message: string; suggestion: Suggestion }
 
 export function completionMessage(motivated: boolean): string {
-  return motivated ? 'やる気が出た Doneを記録しました' : 'Doneを記録しました'
+  if (motivated) {
+    return 'Doneを記録しました（やる気が出た）'
+  }
+
+  return 'Doneを記録しました（やる気は出なかった）'
 }

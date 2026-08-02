@@ -12,6 +12,7 @@ import {
   setTaskPaused,
   updateTaskTitle,
 } from '../tasks'
+import { ScrollFade } from '../ScrollFade'
 import { formatTauriError } from '../tauriRuntime'
 
 type ConfirmingDelete = {
@@ -85,18 +86,19 @@ export function TasksView() {
   }, [])
 
   return (
-    <section className="card card--scroll" aria-label="タスク管理">
-      <div className="card__section">
-        <h2 className="card__heading">タスク一覧</h2>
-        <p className="card__hint">
-          タスク名をクリックして名称を変更できます。「しばらくは出さない」にすると提案に出なくなります（一覧には残ります）。
-        </p>
-      </div>
+    <section className="card card--tasks" aria-label="タスク管理">
+      <ScrollFade className="card__scroll">
+        <div className="card__section">
+          <h2 className="card__heading">タスク一覧</h2>
+          <p className="card__hint">
+            タスク名をクリックして名称を変更できます。「しばらくは出さない」にすると提案に出なくなります（一覧には残ります）。
+          </p>
+        </div>
 
-      {error !== null && <p className="form-error">{error}</p>}
-      {message !== null && <p className="form-success">{message}</p>}
+        {error !== null && <p className="form-error">{error}</p>}
+        {message !== null && <p className="form-success">{message}</p>}
 
-      <ul className="task-list">
+        <ul className="task-list">
         {tasks.map((task, index) => (
           <li key={task.id} className="task-item">
             <div className="task-item__header">
@@ -251,10 +253,11 @@ export function TasksView() {
             })()}
           </li>
         ))}
-      </ul>
+        </ul>
+      </ScrollFade>
 
       <form
-        className="task-form"
+        className="task-form task-form--footer"
         onSubmit={(event) => {
           event.preventDefault()
           void runAction(async () => {

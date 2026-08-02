@@ -5,20 +5,30 @@ import {
   suggestNextTask,
   TIME_BAND_LABELS,
   undoSuggestionCompletion,
+  type Suggestion,
 } from '../suggest'
 import { formatTauriError } from '../tauriRuntime'
+import { schedulePopoverResize } from '../windowBehavior'
 import { completionMessage, type ViewState } from '../viewState'
 
 export function SuggestionView() {
   const [view, setView] = useState<ViewState>({ kind: 'loading' })
   const [isCompleting, setIsCompleting] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const loadSuggestion = useCallback(async (options?: {
     forceNew?: boolean
     excludeTaskId?: number
     replaceSuggestionId?: number
+    keepCurrentView?: boolean
   }) => {
-    setView({ kind: 'loading' })
+    const keepCurrentView = options?.keepCurrentView === true
+
+    if (keepCurrentView) {
+      setIsRefreshing(true)
+    } else {
+      setView({ kind: 'loading' })
+    }
 
     try {
       if (!options?.forceNew) {
@@ -37,8 +47,20 @@ export function SuggestionView() {
     } catch (loadError: unknown) {
       console.error('提案の取得に失敗しました', loadError)
       setView({ kind: 'error', message: formatTauriError(loadError) })
+    } finally {
+      setIsRefreshing(false)
+      schedulePopoverResize()
     }
   }, [])
+
+  const requestAnotherSuggestion = useCallback((suggestion: Suggestion) => {
+    void loadSuggestion({
+      forceNew: true,
+      excludeTaskId: suggestion.taskId,
+      replaceSuggestionId: suggestion.id,
+      keepCurrentView: true,
+    })
+  }, [loadSuggestion])
 
   const completeCurrentSuggestion = useCallback(async (motivated: boolean) => {
     if (view.kind !== 'suggestion' || isCompleting) {
@@ -134,41 +156,38 @@ export function SuggestionView() {
   }
 
   return (
-    <section className="card" aria-label="提案">
+    <section className="card" aria-label="提案" aria-busy={isRefreshing}>
       <p className="card__label">{TIME_BAND_LABELS[view.suggestion.timeBand]}</p>
       <h2 className="card__title">{view.suggestion.title}</h2>
-      <div className="card__actions">
+      <p className="card__hint">やる気は出ましたか？</p>
+      <div className="done-prompt__choices">
         <button
-          className="btn btn--primary"
+          className="done-prompt__choice"
           type="button"
-          disabled={isCompleting}
+          disabled={isCompleting || isRefreshing}
+          aria-label="やる気は出なかった"
           onClick={() => void completeCurrentSuggestion(false)}
         >
-          Done
+          <span className="done-prompt__emoji" aria-hidden="true">😐</span>
+          <span className="done-prompt__choice-label">出なかった</span>
         </button>
         <button
-          className="btn btn--success"
+          className="done-prompt__choice done-prompt__choice--motivated"
           type="button"
-          disabled={isCompleting}
+          disabled={isCompleting || isRefreshing}
+          aria-label="やる気が出た"
           onClick={() => void completeCurrentSuggestion(true)}
         >
-          やる気が出た Done
+          <span className="done-prompt__emoji" aria-hidden="true">✨</span>
+          <span className="done-prompt__choice-label">出た</span>
         </button>
+      </div>
+      <div className="card__actions">
         <button
           className="btn btn--secondary"
           type="button"
-          disabled={isCompleting}
-          onClick={() => {
-            if (view.kind !== 'suggestion') {
-              return
-            }
-
-            void loadSuggestion({
-              forceNew: true,
-              excludeTaskId: view.suggestion.taskId,
-              replaceSuggestionId: view.suggestion.id,
-            })
-          }}
+          disabled={isCompleting || isRefreshing}
+          onClick={() => requestAnotherSuggestion(view.suggestion)}
         >
           別の提案
         </button>

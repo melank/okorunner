@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { listRecentCompletions, TIME_BAND_LABELS, undoSuggestionCompletion, type RecentCompletion } from '../suggest'
 import { formatRate, loadTaskStats, type TaskStat } from '../stats'
+import { ScrollFade } from '../ScrollFade'
 import { formatTauriError } from '../tauriRuntime'
 import type { TimeBand } from '../timeBand'
 
@@ -92,8 +93,9 @@ export function StatsView() {
   )
 
   return (
-    <section className="card card--scroll" aria-label="統計">
-      <div className="card__section">
+    <section className="card card--fill" aria-label="統計">
+      <ScrollFade>
+        <div className="card__section">
         <h2 className="card__heading">やる気が出た率</h2>
         <p className="card__hint">時間帯ごとの Done 記録から集計しています。</p>
       </div>
@@ -160,6 +162,7 @@ export function StatsView() {
           </ul>
         </div>
       )}
+      </ScrollFade>
     </section>
   )
 }
