@@ -9,7 +9,8 @@
     "core:window:allow-set-focus",
     "core:window:allow-hide",
     "core:window:allow-is-visible",
-    "core:window:allow-set-position",
+    "core:window:allow-is-focused",
+    "core:window:allow-set-size",
     "core:window:allow-outer-size",
     "core:window:allow-primary-monitor",
     "core:window:allow-center",
@@ -19,6 +20,7 @@
     "core:tray:default",
     "core:app:allow-default-window-icon",
     "sql:default",
-    "sql:allow-execute"
+    "sql:allow-execute",
+    "allow-raise-popover-window"
   ]
 }

@@ -34,7 +34,8 @@ test('should define the required application metadata and connect Vite to Tauri'
   assert.equal(config.identifier, 'com.melank.okorunner')
   assert.equal(config.app.windows[0].label, 'main')
   assert.equal(config.app.windows[0].width, 360)
-  assert.equal(config.app.windows[0].height, 400)
+  assert.equal(config.app.windows[0].height, 320)
+  assert.equal(config.app.windows[0].decorations, false)
   assert.equal(config.app.windows[0].visible, false)
   assert.equal(config.app.windows[1].label, 'manage')
   assert.equal(config.app.windows[1].resizable, true)
@@ -113,6 +114,7 @@ test('should record Done completion in suggestions', async () => {
 
   assert.match(source, /completeSuggestion/)
   assert.match(source, /undoSuggestionCompletion/)
+  assert.match(source, /purgeLogicallyDeletedTaskIfNoDoneHistory/)
   assert.match(source, /listRecentCompletions/)
   assert.match(source, /excludeTaskIds/)
   assert.match(source, /replaceSuggestionId/)
@@ -123,6 +125,7 @@ test('should delete tasks based on done execution count', async () => {
 
   assert.match(source, /deleteTask/)
   assert.match(source, /deleted = 1/)
+  assert.match(source, /purgeLogicallyDeletedTaskIfNoDoneHistory/)
   assert.match(source, /listVisibleTasks/)
 })
 
@@ -139,10 +142,11 @@ test('should initialize tray and window shell outside React', async () => {
   assert.doesNotMatch(mainSource, /hideMainWindowOnClose/)
 })
 
-test('should toggle the popover window only on tray mouse up', async () => {
-  const [traySource, windowSource] = await Promise.all([
+test('should toggle application windows only on tray mouse up', async () => {
+  const [traySource, windowSource, trayWindowLogicSource] = await Promise.all([
     readProjectFile('src/tray.ts'),
     readProjectFile('src/windowBehavior.ts'),
+    readProjectFile('src/trayWindowLogic.ts'),
   ])
 
   assert.match(traySource, /TRAY_ID = 'okorunner-main-tray'/)
@@ -151,16 +155,22 @@ test('should toggle the popover window only on tray mouse up', async () => {
   assert.match(traySource, /showMenuOnLeftClick: false/)
   assert.match(traySource, /createTrayMenu/)
   assert.match(traySource, /loadTrayIcon/)
-  assert.match(traySource, /togglePopoverWindow/)
+  assert.match(traySource, /toggleTrayWindows/)
   assert.match(windowSource, /activatePopoverWindow/)
+  assert.match(windowSource, /raise_app_window/)
+  assert.match(windowSource, /toggleTrayWindows/)
+  assert.match(windowSource, /hideManageWindow/)
   assert.match(windowSource, /openManageWindow/)
-  assert.match(windowSource, /positionWindowNearTray/)
+  assert.match(windowSource, /hideWindowOnClose/)
+  assert.match(windowSource, /await window\.hide\(\)/)
+  assert.match(trayWindowLogicSource, /decideTrayWindowAction/)
 })
 
 test('should register only the required Rust Tauri plugins', async () => {
-  const [cargoManifest, rustSource] = await Promise.all([
+  const [cargoManifest, rustSource, macosWindowSource] = await Promise.all([
     readProjectFile('src-tauri/Cargo.toml'),
     readProjectFile('src-tauri/src/lib.rs'),
+    readProjectFile('src-tauri/src/macos_window.rs'),
   ])
 
   assert.match(cargoManifest, /^tauri = \{ version = "2", features = \["tray-icon", "image-png"\] \}$/m)
@@ -168,5 +178,9 @@ test('should register only the required Rust Tauri plugins', async () => {
   assert.match(rustSource, /tauri_plugin_sql::Builder::default\(\)/)
   assert.match(rustSource, /\.add_migrations\(db::DATABASE_URL, db::migrations\(\)\)/)
   assert.match(rustSource, /ActivationPolicy::Accessory/)
+  assert.match(rustSource, /configure_popover_for_active_space/)
+  assert.match(macosWindowSource, /MoveToActiveSpace/)
+  assert.match(macosWindowSource, /makeKeyAndOrderFront/)
+  assert.match(rustSource, /raise_app_window/)
   assert.equal((rustSource.match(/\.plugin\(/g) ?? []).length, 1)
 })

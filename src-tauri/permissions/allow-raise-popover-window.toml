@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-raise-popover-window"
+description = "Allows raising application windows to the front on macOS."
+commands.allow = ["raise_app_window"]

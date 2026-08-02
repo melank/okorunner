@@ -15,7 +15,8 @@
         "label": "main",
         "title": "やる気起こrunner",
         "width": 360,
-        "height": 400,
+        "height": 320,
+        "decorations": false,
         "resizable": false,
         "visible": false,
         "skipTaskbar": true
@@ -23,9 +24,9 @@
       {
         "label": "manage",
         "title": "やる気起こrunner — 管理",
-        "width": 720,
+        "width": 560,
         "height": 600,
-        "minWidth": 560,
+        "minWidth": 420,
         "minHeight": 480,
         "resizable": true,
         "visible": false,
