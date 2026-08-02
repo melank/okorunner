@@ -15,8 +15,7 @@
         "label": "main",
         "title": "やる気起こrunner",
         "width": 360,
-        "height": 320,
-        "decorations": false,
+        "height": 300,
         "resizable": false,
         "visible": false,
         "skipTaskbar": true

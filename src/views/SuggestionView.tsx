@@ -8,7 +8,6 @@ import {
   type Suggestion,
 } from '../suggest'
 import { formatTauriError } from '../tauriRuntime'
-import { schedulePopoverResize } from '../windowBehavior'
 import { completionMessage, type ViewState } from '../viewState'
 
 export function SuggestionView() {
@@ -49,7 +48,6 @@ export function SuggestionView() {
       setView({ kind: 'error', message: formatTauriError(loadError) })
     } finally {
       setIsRefreshing(false)
-      schedulePopoverResize()
     }
   }, [])
 

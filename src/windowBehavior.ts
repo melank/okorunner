@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import { LogicalSize, PhysicalPosition } from '@tauri-apps/api/dpi'
+import { PhysicalPosition } from '@tauri-apps/api/dpi'
 import { getCurrentWindow, primaryMonitor } from '@tauri-apps/api/window'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { MANAGE_WINDOW_LABEL, MAIN_WINDOW_LABEL } from './appTabs'
@@ -9,23 +9,6 @@ import { decideTrayWindowAction, type TrayWindowState } from './trayWindowLogic'
 export type TrayRect = {
   position: { x: number; y: number }
   size: { width: number; height: number }
-}
-
-export const POPOVER_WINDOW_WIDTH = 360
-const POPOVER_HEIGHT_BUFFER = 8
-
-export function measurePopoverHeight(): number {
-  const app = document.querySelector('.app--popover')
-  if (app instanceof HTMLElement) {
-    return Math.ceil(app.getBoundingClientRect().height) + POPOVER_HEIGHT_BUFFER
-  }
-
-  const root = document.getElementById('root')
-  if (root instanceof HTMLElement) {
-    return Math.ceil(root.getBoundingClientRect().height) + POPOVER_HEIGHT_BUFFER
-  }
-
-  return Math.ceil(document.documentElement.scrollHeight) + POPOVER_HEIGHT_BUFFER
 }
 
 function isMainWindow(): boolean {
@@ -126,7 +109,6 @@ export async function activatePopoverWindow(trayRect?: TrayRect): Promise<void> 
   await window.show()
   await window.unminimize()
   await raiseAppWindow(MAIN_WINDOW_LABEL)
-  await resizePopoverToContent()
   await positionWindowNearTray(trayRect)
   await window.setFocus()
 }
@@ -176,39 +158,6 @@ export async function toggleTrayWindows(trayRect?: TrayRect): Promise<void> {
 /** @deprecated Use toggleTrayWindows instead. */
 export async function togglePopoverWindow(trayRect?: TrayRect): Promise<void> {
   await toggleTrayWindows(trayRect)
-}
-
-export async function resizePopoverToContent(): Promise<void> {
-  assertTauriRuntime()
-  const window = getCurrentWindow()
-  if (!isMainWindow()) {
-    return
-  }
-
-  const height = measurePopoverHeight()
-  const innerSize = await window.innerSize()
-  if (innerSize.height >= height && innerSize.width === POPOVER_WINDOW_WIDTH) {
-    return
-  }
-
-  await window.setSize(new LogicalSize(POPOVER_WINDOW_WIDTH, Math.max(height, 1)))
-}
-
-let scheduledResizeFrame: number | undefined
-
-export function schedulePopoverResize(): void {
-  if (scheduledResizeFrame !== undefined) {
-    cancelAnimationFrame(scheduledResizeFrame)
-  }
-
-  scheduledResizeFrame = requestAnimationFrame(() => {
-    scheduledResizeFrame = requestAnimationFrame(() => {
-      scheduledResizeFrame = undefined
-      void resizePopoverToContent().catch((error: unknown) => {
-        console.error('ポップオーバーのリサイズに失敗しました', error)
-      })
-    })
-  })
 }
 
 export async function openManageWindow(): Promise<void> {

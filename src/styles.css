@@ -232,13 +232,13 @@ body {
 html.popover-window,
 html.popover-window body,
 html.popover-window #root {
-  height: auto;
-  min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .app--popover {
-  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-4) var(--space-3);
 }
@@ -248,12 +248,8 @@ html.popover-window #root {
   min-height: 0;
 }
 
-.app--popover .app__footer {
-  margin-top: 0;
-}
-
 .app--popover .card {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   gap: var(--space-3);
   padding: var(--space-3);
 }
@@ -392,37 +388,6 @@ html.popover-window #root {
 
 .card__scroll {
   min-height: 0;
-}
-
-.app__footer {
-  margin-top: auto;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
-}
-
-.app__manage-link {
-  width: 100%;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem var(--space-3);
-  background: var(--color-surface-muted);
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  text-align: center;
-  cursor: pointer;
-}
-
-.app__manage-link:hover {
-  border-color: var(--color-border);
-  background: var(--color-secondary);
-  color: var(--color-text);
-}
-
-.app__manage-link:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .app-nav {

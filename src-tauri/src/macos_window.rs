@@ -27,7 +27,7 @@ pub fn raise_window(window: &tauri::WebviewWindow) -> Result<(), tauri::Error> {
 
     if let Some(mtm) = MainThreadMarker::new() {
         let app = NSApplication::sharedApplication(mtm);
-        app.activateIgnoringOtherApps(true);
+        app.activate();
     }
 
     let ns_window_ptr = window.ns_window()?;
